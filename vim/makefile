@@ -1,4 +1,4 @@
-all: base javascript plugins
+all: base plugins
 
 base:
 	mkdir -p ~/.vim

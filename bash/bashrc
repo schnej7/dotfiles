@@ -71,7 +71,7 @@ CDPATH=.:~/
 export CDPATH
 
 # Modifing the prompt
-source "~/.bash_colors.sh"
+source "$HOME/.bash_colors"
 
 PROMPT_COMMAND=precmd
 

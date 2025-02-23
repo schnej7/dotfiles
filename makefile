@@ -1,4 +1,4 @@
-.PHONY: all osx work
+.PHONY: all osx work bash bash-osx screen vim ssh work
 
 all: bash vim screen ssh
 

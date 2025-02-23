@@ -4,7 +4,9 @@
 #
 
 
-eval $(dircolors -b)
+if command -v dircolors &> /dev/null; then
+  eval $(dircolors -b)
+fi
 
 # regular colors
 txtblk='\[\e[1;30m\]' # Black - Regular
