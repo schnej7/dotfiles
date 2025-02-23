@@ -1,0 +1,135 @@
+filetype on
+filetype plugin on
+set softtabstop=2 tabstop=2 shiftwidth=2 expandtab
+autocmd FileType html setlocal sw=2 ts=2 sts=2
+autocmd FileType js setlocal sw=2 ts=2 sts=2
+autocmd FileType vue setlocal sw=2 ts=2 sts=2
+autocmd FileType css setlocal sw=2 ts=2 sts=2
+autocmd FileType less setlocal sw=2 ts=2 sts=2
+autocmd FileType vue setlocal sw=2 ts=2 sts=2
+autocmd FileType ts setlocal sw=2 ts=2 sts=2
+autocmd FileType typescript setlocal sw=2 ts=2 sts=2
+autocmd FileType make set noexpandtab
+autocmd BufRead,BufNewFile *.json set filetype=javascript
+autocmd BufRead,BufNewFile *.jy set filetype=python
+autocmd BufRead,BufNewFile *.vue set filetype=html
+autocmd BufRead,BufNewFile .clarirc set filetype=bash
+au BufRead,BufNewFile *.vm set ft=html syntax=velocity
+au BufRead,BufNewFile *.dust set ft=html syntax=velocity
+au BufRead,BufNewFile *.less set ft=css syntax=css
+au BufRead,BufNewFile *.jade set syntax=jade
+set relativenumber
+set nu
+set hlsearch
+set incsearch
+set ignorecase
+set smartcase
+set ls=2
+set re=0
+syntax on
+let g:markdown_fenced_languages = ['html', 'python', 'bash=sh', 'json']
+
+" Toggle on/off line numbers
+function ToggleNU()
+  let l:nuset = execute(":set nu?")
+  echom "'" . nuset . "'"
+  if stridx(nuset, 'nonumber') >= 0
+    execute(":set nu")
+    execute(":set rnu")
+    execute(":set signcolumn=yes")
+    execute(":call lsp#enable()")
+    execute(":redraw")
+  else
+    execute(":set nonu")
+    execute(":set nornu")
+    execute(":set signcolumn=no")
+    execute(":call lsp#disable()")
+    execute(":redraw")
+  endif
+endfunction
+nnoremap <C-m> :call ToggleNU()<CR>
+
+" Toggle on/off relative line numbers
+function ToggleRNU()
+  let l:rnuset = execute(":set rnu?")
+  if stridx(rnuset, 'norelativenumber') >= 0
+    execute(":set nu")
+    execute(":set rnu")
+  else
+    execute(":set nornu")
+  endif
+endfunction
+nnoremap <C-n> :call ToggleRNU()<CR>
+
+" Hover tip
+nnoremap <C-h> :LspHover<CR>
+
+" QuickFix lsp code action
+nnoremap - :LspCodeAction<CR>
+
+" QuickFix find all references
+nnoremap 0 :LspReferences<CR>
+
+" Close all tabs but the current
+nnoremap 1 :tabonly<CR>
+
+" Navigate tabs
+nnoremap 2 :set nomore <Bar> :ls <Bar> :set more <CR>:b<Space>
+
+" Open QuickFix
+nnoremap 8 :copen<CR> <C-w>J
+
+" Close QuickFix
+nnoremap 9 :cclose<CR> <C-w>p
+
+" QuickFix (from 0)
+function SetQF()
+  " window splitting
+  nnoremap <buffer> <CR> <C-w><CR><C-w>L :copen<CR> <C-w>J <C-w>p
+  " quit
+  nnoremap <buffer> q :cclose<CR> <C-w>p
+endfunction
+autocmd! FileType qf call SetQF()
+
+"""""""""""""""""""""""""""
+" Language Server Plugins "
+"""""""""""""""""""""""""""
+
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+  silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
+function InitPlugins()
+	call plug#begin('~/vimplugins')
+
+	Plug 'prabirshrestha/vim-lsp'
+	Plug 'mattn/vim-lsp-settings'
+  Plug 'tpope/vim-fugitive'
+
+	call plug#end()
+endfunction
+
+call InitPlugins()
+
+" By default I want no LSP, sometimes when needed, I can simply call StartLsp
+" to start it
+function g:StartLsp()
+	function! OnLspBufferEnabled() abort
+	    setlocal omnifunc=lsp#complete
+	    setlocal signcolumn=yes
+	    nmap <buffer> gi <plug>(lsp-definition)
+	    nmap <buffer> gd <plug>(lsp-declaration)
+	    nmap <buffer> gr <plug>(lsp-references)
+	    nmap <buffer> gl <plug>(lsp-document-diagnostics)
+	    nmap <buffer> <f2> <plug>(lsp-rename)
+	    nmap <buffer> <f3> <plug>(lsp-hover)
+	endfunction
+	
+	augroup lsp_install
+	  au!
+	  autocmd User lsp_buffer_enabled call OnLspBufferEnabled()
+	augroup END
+
+endfunction
