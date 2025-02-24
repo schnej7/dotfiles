@@ -1,6 +1,6 @@
 [submodule "private"]
 	path = private
-	url = git@github-personal:schnej7/personal_scripts.git
+	url = git@github.com:schnej7/personal_scripts.git
 [submodule "vim/pack/vim-javascript/start/vim-javascript"]
 	path = vim/pack/vim-javascript/start/vim-javascript
 	url = https://github.com/pangloss/vim-javascript.git
