@@ -3,21 +3,32 @@ function kill-count(){
     git ls-files -z | xargs -0rn 1 -P "$(nproc)" -I{} sh -c 'git blame -w -M -C -C --line-porcelain -- {} | grep -I --line-buffered "^author "' | sort -f | uniq -ic | sort -n
 }
 
-function ack-src(){
-  ack $@ --ignore-dir=dist --ignore-dir=node_modules
+# inplace sed alias
+function sedi() {
+  sed -i $@
+}
+
+# src ack (ignore non src directories)
+function sack(){
+  ack $@ --ignore-dir=dist --ignore-dir=node_modules --ignore-dir=coverage
 }
 
 # Recursive replace all
 function replace(){
     if [[ $1 && $2 && $3 ]]; then
-        ACK_FILES=$(ack -l $1 $3)
+        MATCH_COUNT=0
+        FILE_COUNT=0
+        ACK_FILES=$(sack -l $1 $3)
         for FILE in $ACK_FILES; do
-            FILE_NAME_GRN="${sh_grn}$FILE${sh_nc}\n"
-            printf $FILE_NAME_GRN
-            ack -C 1 $1 $FILE
-            sed -i s/$1/$2/g $FILE
+            printf "${sh_grn}$FILE${sh_nc}\n"
+            sack -C 1 $1 $FILE
+            MATCH=`sack $1 $FILE | wc -l`
+            MATCH_COUNT=$(expr $MATCH_COUNT + $MATCH)
+            FILE_COUNT=$(expr $FILE_COUNT + 1)
+            sedi s/$1/$2/g $FILE
             echo
         done
+        printf "${sh_grn}success ${sh_cyn}$MATCH_COUNT${sh_nc} replacements in ${sh_cyn}$FILE_COUNT${sh_nc} files\n"
     else
         echo "No args $1, $2, $3"
         echo "replace string1 string2 directory"
@@ -68,7 +79,7 @@ function o(){
 
 # Open all files in vim which contain a string
 function oc(){
-    vim -p $(ack $@ --heading | grep -v '^[0-9]*:')
+    vim -p $(sack $@ --heading | grep -v '^[0-9]*:')
 }
 
 # List all screen sessions
