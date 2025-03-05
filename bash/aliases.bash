@@ -3,6 +3,10 @@ function kill-count(){
     git ls-files -z | xargs -0rn 1 -P "$(nproc)" -I{} sh -c 'git blame -w -M -C -C --line-porcelain -- {} | grep -I --line-buffered "^author "' | sort -f | uniq -ic | sort -n
 }
 
+function ack-src(){
+  ack $@ --ignore-dir=dist --ignore-dir=node_modules
+}
+
 # Recursive replace all
 function replace(){
     if [[ $1 && $2 && $3 ]]; then
