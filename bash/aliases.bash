@@ -1,3 +1,5 @@
+alias branch="git branch --sort=-committerdate"
+
 # Get line count by contributer
 function kill-count(){
     git ls-files -z | xargs -0rn 1 -P "$(nproc)" -I{} sh -c 'git blame -w -M -C -C --line-porcelain -- {} | grep -I --line-buffered "^author "' | sort -f | uniq -ic | sort -n
@@ -10,7 +12,7 @@ function sedi() {
 
 # src ack (ignore non src directories)
 function sack(){
-  ack $@ --ignore-dir=dist --ignore-dir=node_modules --ignore-dir=coverage
+  ack "$@" --ignore-dir=dist --ignore-dir=node_modules --ignore-dir=coverage
 }
 
 # Recursive replace all
