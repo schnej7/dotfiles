@@ -76,12 +76,22 @@ function f(){
 
 # Open all files matching name in vim
 function o(){
-    vim -p $(f $@)
+    FILES=$(f $@)
+    if [[ ! -z "${FILES[@]}" ]]; then
+      vim -p $FILES
+    else
+      printf "${sh_cyn}$@${sh_red} does not match any files${sh_nc}\n"
+    fi
 }
 
 # Open all files in vim which contain a string
-function oc(){
-    vim -p $(sack $@ --heading | grep -v '^[0-9]*:')
+function osack(){
+    FILES=$(sack $@ --heading | grep -v '^[0-9]*:')
+    if [[ ! -z "${FILES[@]}" ]]; then
+      vim -p $FILES
+    else
+      printf "${sh_cyn}$@${sh_red} not found in any files${sh_nc}\n"
+    fi
 }
 
 # List all screen sessions
@@ -105,7 +115,7 @@ function kdsl(){
 }
 
 # Attach to the first detached screen session
-function r(){
+function rs(){
     FIRST_SCREEN=$(dsl | sort | head -1)
     if [[ "$FIRST_SCREEN" != "" && "" == "$(echo $STY)" ]]; then
         screen -x $FIRST_SCREEN
