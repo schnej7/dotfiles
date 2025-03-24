@@ -12,7 +12,7 @@ function sedi() {
 
 # src ack (ignore non src directories)
 function sack(){
-  ack "$@" --ignore-dir=dist --ignore-dir=node_modules --ignore-dir=coverage
+  ack "$@" --ignore-dir=dist --ignore-dir=node_modules --ignore-dir=coverage --ignore-dir=test_results
 }
 
 # Recursive replace all
