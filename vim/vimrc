@@ -10,7 +10,6 @@ autocmd FileType vue setlocal sw=2 ts=2 sts=2
 autocmd FileType ts setlocal sw=2 ts=2 sts=2
 autocmd FileType typescript setlocal sw=2 ts=2 sts=2
 autocmd FileType make set noexpandtab
-autocmd BufRead,BufNewFile *.json set filetype=javascript
 autocmd BufRead,BufNewFile *.jy set filetype=python
 autocmd BufRead,BufNewFile *.vue set filetype=html
 autocmd BufRead,BufNewFile .clarirc set filetype=bash

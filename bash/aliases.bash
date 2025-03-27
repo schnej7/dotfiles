@@ -1,4 +1,7 @@
-alias branch="git branch --sort=-committerdate"
+ unalias branch
+function branch() {
+  git branch -a --sort=-committerdate | fzf --header 'git checkout' | awk '{print $1}' | sed 's#remotes/origin/##' | xargs git checkout
+}
 
 # Get line count by contributer
 function kill-count(){
