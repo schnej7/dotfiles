@@ -78,23 +78,39 @@ function f(){
 }
 
 # Open all files matching name in vim
-function o(){
-    FILES=$(f $@)
-    if [[ ! -z "${FILES[@]}" ]]; then
-      vim -p $FILES
+function o() {
+  FILES_STR=$(f $@)
+  FILES=( $FILES_STR )
+  if [[ -z "${FILES[@]}" ]]; then
+    printf "${sh_cyn}$@${sh_red} does not match any files${sh_nc}\n"
+  elif [[ ${#FILES[@]} -eq 1 ]]; then
+    vim ${FILES[0]}
+  else
+    FILE=$(printf '%s\n' "$FILES_STR" | fzf)
+    if [ -z "${FILE}" ]; then
+      vim -p $FILES_STR
     else
-      printf "${sh_cyn}$@${sh_red} does not match any files${sh_nc}\n"
+      vim $FILE
     fi
+  fi
 }
 
 # Open all files in vim which contain a string
 function osack(){
-    FILES=$(sack $@ --heading | grep -v '^[0-9]*:')
-    if [[ ! -z "${FILES[@]}" ]]; then
-      vim -p $FILES
+  FILES_STR=$(sack -l $@)
+  FILES=( $FILES_STR )
+  if [[ -z "${FILES[@]}" ]]; then
+    printf "${sh_cyn}$@${sh_red} not found in any files${sh_nc}\n"
+  elif [[ ${#FILES[@]} -eq 1 ]]; then
+    vim ${FILES[0]}
+  else
+    FILE=$(printf '%s\n' "$FILES_STR" | fzf)
+    if [ -z "${FILE}" ]; then
+      vim -p $FILES_STR
     else
-      printf "${sh_cyn}$@${sh_red} not found in any files${sh_nc}\n"
+      vim $FILE
     fi
+  fi
 }
 
 # List all screen sessions
