@@ -1,3 +1,7 @@
+function sauce() {
+  source ~/.bashrc
+}
+
 function giff() {
   if [[ $1 ]]; then
     FILES=$(git diff --name-only $1 | fzf -m)
@@ -94,11 +98,11 @@ function o() {
   elif [[ ${#FILES[@]} -eq 1 ]]; then
     vim ${FILES[0]}
   else
-    FILE=$(printf '%s\n' "$FILES_STR" | fzf)
+    FILE=$(printf '%s\n' "$FILES_STR" | fzf -m)
     if [ -z "${FILE}" ]; then
       vim -p $FILES_STR
     else
-      vim $FILE
+      vim -O $FILE
     fi
   fi
 }
@@ -112,11 +116,11 @@ function osack(){
   elif [[ ${#FILES[@]} -eq 1 ]]; then
     vim ${FILES[0]}
   else
-    FILE=$(printf '%s\n' "$FILES_STR" | fzf)
+    FILE=$(printf '%s\n' "$FILES_STR" | fzf -m)
     if [ -z "${FILE}" ]; then
       vim -p $FILES_STR
     else
-      vim $FILE
+      vim -O $FILE
     fi
   fi
 }

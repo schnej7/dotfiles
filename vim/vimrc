@@ -75,6 +75,9 @@ nnoremap 1 :tabonly<CR>
 " Navigate tabs
 nnoremap 2 :set nomore <Bar> :ls <Bar> :set more <CR>:b<Space>
 
+" Navigate tabs
+nnoremap 3 :LspRename<CR>
+
 " Open QuickFix
 nnoremap 8 :copen<CR> <C-w>J
 
