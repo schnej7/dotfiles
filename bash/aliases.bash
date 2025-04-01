@@ -4,7 +4,7 @@ function sauce() {
 
 function giff() {
   if [[ $1 ]]; then
-    FILES=$(git diff --name-only $1 | fzf -m)
+    FILES=$(git diff --name-only $1 | fzf -m --preview "git diff $1 {} | bat --style=numbers --color=always")
     git diff $1 $FILES
   else
     echo "Must specify branch name"
@@ -12,7 +12,13 @@ function giff() {
 }
 
 function branch() {
-  git branch -a --sort=-committerdate | fzf --header 'git checkout' | awk '{print $1}' | sed 's#remotes/origin/##' | xargs git checkout
+  git branch -a --sort=-committerdate | \
+  fzf --header 'git checkout' \
+      --preview 'branch=$(echo {} | sed "s/^[ *]*//" | sed "s#remotes/origin/##"); git log $branch --color=always' | \
+  awk '{print $1}' | \
+  sed 's#remotes/origin/##' | \
+  bat --style=numbers --color=always | \
+  xargs git checkout
 }
 
 # Get line count by contributer
