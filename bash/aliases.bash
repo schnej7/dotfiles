@@ -17,7 +17,6 @@ function branch() {
       --preview 'branch=$(echo {} | sed "s/^[ *]*//" | sed "s#remotes/origin/##"); git log $branch --color=always' | \
   awk '{print $1}' | \
   sed 's#remotes/origin/##' | \
-  bat --style=numbers --color=always | \
   xargs git checkout
 }
 
