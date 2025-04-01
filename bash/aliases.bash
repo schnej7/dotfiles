@@ -1,4 +1,12 @@
- unalias branch
+function giff() {
+  if [[ $1 ]]; then
+    FILES=$(git diff --name-only $1 | fzf -m)
+    git diff $1 $FILES
+  else
+    echo "Must specify branch name"
+  fi
+}
+
 function branch() {
   git branch -a --sort=-committerdate | fzf --header 'git checkout' | awk '{print $1}' | sed 's#remotes/origin/##' | xargs git checkout
 }
