@@ -3,21 +3,21 @@ function sauce() {
 }
 
 function giff() {
-  if [[ $1 ]]; then
-    FILES=$(git diff --name-only $1 | fzf -m --preview "git diff $1 {} | bat --style=numbers --color=always")
-    git diff $1 $FILES
-  else
-    echo "Must specify branch name"
-  fi
+  FILES=$(git diff --name-only $1 | fzf -m --preview "git diff $1 {} | bat --style=numbers --color=always")
+  git diff $1 $FILES
 }
 
 function branch() {
   git branch -a --sort=-committerdate | \
-  fzf --header 'git checkout' \
+  fzf --no-sort --header 'git checkout' \
       --preview 'branch=$(echo {} | sed "s/^[ *]*//" | sed "s#remotes/origin/##"); git log $branch --color=always' | \
   awk '{print $1}' | \
   sed 's#remotes/origin/##' | \
   xargs git checkout
+}
+
+function master() {
+  git checkout master
 }
 
 # Get line count by contributer
@@ -96,17 +96,21 @@ function f(){
 
 # Open all files matching name in vim
 function o() {
-  FILES_STR=$(f $@)
-  FILES=( $FILES_STR )
-  if [[ -z "${FILES[@]}" ]]; then
+  if [[ $1 ]]; then
+    local FILES_STR=$(f $@)
+    local FILES=( $FILES_STR )
+  fi
+  if [[ $1 && -z "${FILES[@]}" ]]; then
     printf "${sh_cyn}$@${sh_red} does not match any files${sh_nc}\n"
-  elif [[ ${#FILES[@]} -eq 1 ]]; then
+  elif [[ $1 && ${#FILES[@]} -eq 1 ]]; then
     vim ${FILES[0]}
   else
-    FILE=$(printf '%s\n' "$FILES_STR" | fzf -m)
-    if [ -z "${FILE}" ]; then
-      vim -p $FILES_STR
+    if [[ "$FILES_STR" ]]; then
+      local FILE=$(printf '%s\n' "$FILES_STR" | fzf -m)
     else
+      local FILE=$(fzf -m)
+    fi
+    if [[ ${FILE} ]]; then
       vim -O $FILE
     fi
   fi
