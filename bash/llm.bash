@@ -1,4 +1,4 @@
-function capture_and_report_test_output() {
+function ai_help_me_test() {
     local output_file="$1" # File to capture the command output
     shift # Remove the first argument (output file)
     local command_to_run="$@" # All remaining arguments form the command to run
