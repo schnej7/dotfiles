@@ -191,3 +191,8 @@ function deleteTag(){
   git tag --delete $1
   git push origin :refs/tags/$1
 }
+
+# Alias definitions.
+if [ -f ~/.llm.bash ]; then
+    . ~/.llm.bash
+fi
