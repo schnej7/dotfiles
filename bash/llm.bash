@@ -5,6 +5,12 @@ function capture_and_report_test_output() {
     local fail_file="/tmp/failing_tests.txt" # Temporary file to store failing test filenames
     local test_descriptions="/tmp/failing_test_descriptions.txt" # Store test descriptions
     
+    # Define colors for output
+    local cyan='\033[0;36m'
+    local green='\033[0;32m'
+    local yellow='\033[0;33m'
+    local nc='\033[0m' # No Color
+    
     # Check if output file is provided
     if [[ -z "$output_file" ]]; then
         echo "Error: Please provide the output file as the first argument."
@@ -26,19 +32,18 @@ function capture_and_report_test_output() {
     function cleanup() {
         # Remove temporary files
         rm -f "$fail_file" "$test_descriptions"
-        echo "Cleanup complete."
+        echo -e "${green}Cleanup complete.${nc}"
     }
     
     # Set up trap for Ctrl+C and normal exit
     trap cleanup SIGINT EXIT
     
-    echo "Running test command and capturing output..."
+    echo -e "${green}Running test command and capturing output...${nc}"
     
-    # Execute the command and capture both stdout and stderr
-    # Use tee to display output in real-time while also saving to file
+    # Execute the command and capture both stdout and stderr, show in real-time, and write to file
     eval "$command_to_run" 2>&1 | tee "$output_file"
     
-    echo "Tests completed."
+    echo -e "${green}Tests completed.${nc}"
     
     # Process the captured output for failing tests
     while IFS= read -r line; do
@@ -81,38 +86,45 @@ function capture_and_report_test_output() {
                        git main-branch 2>/dev/null || 
                        echo "master")
     
-    echo "Parent branch determined as: $base_branch"
+    echo -e "${green}Parent branch determined as:${nc} $base_branch"
     
-    # Generate LLM prompt for fixing failing tests
-    echo "Generating LLM prompt..."
-    local llm_prompt="Below is the output of failing tests. Please analyze and provide fixes for the issues:\n\n"
-    llm_prompt+="$(cat "$output_file")"
+    # Generate LLM prompt with new format
+    echo -e "${green}Generating LLM prompt...${nc}"
+    local llm_prompt="The failing test output is available in the file ${output_file}, please analyze the output and determine if the failures are legitimate and/or if the tests need to be updated based on code changes and implement fixes where possible."
+    
+    echo -e "\n${yellow}### LLM Prompt ###${nc}"
+    echo -e "$llm_prompt"
     
     # Report failing tests with descriptions
+    echo -e "\n${yellow}Failing tests with descriptions:${nc}"
     if [[ -f "$test_descriptions" && -s "$test_descriptions" ]]; then
-        echo -e "\nFailing tests with descriptions:"
-        sort -u "$test_descriptions"
-        llm_prompt+="\n\nFailing tests with descriptions:\n$(sort -u "$test_descriptions")"
+        while IFS= read -r line; do
+            file_part=$(echo "$line" | cut -d':' -f1)
+            desc_part=$(echo "$line" | cut -d':' -f2-)
+            echo -e "${cyan}$file_part${nc}:$desc_part"
+        done < <(sort -u "$test_descriptions")
+    else
+        echo -e "No failing tests detected."
     fi
     
     # Report failing test files
+    echo -e "\n${yellow}Failing test files:${nc}"
     if [[ -f "$fail_file" && -s "$fail_file" ]]; then
-        echo -e "\nFailing test files:"
-        sort -u "$fail_file"
-        llm_prompt+="\n\nFailing test files:\n$(sort -u "$fail_file")"
+        while IFS= read -r line; do
+            echo -e "${cyan}$line${nc}"
+        done < <(sort -u "$fail_file")
     else
-        echo -e "\nNo failing tests detected."
+        echo -e "No failing test files detected."
     fi
     
-    echo -e "\n### LLM Prompt ###"
-    echo -e "$llm_prompt"
-    
     # Generate list of files modified in the current branch
-    echo "Generating list of modified files..."
     git diff --name-only "$base_branch" > /tmp/modified_files.txt
     echo "$output_file" >> /tmp/modified_files.txt
-    echo -e "\nModified files:"
-    cat /tmp/modified_files.txt
+    
+    echo -e "\n${yellow}Modified files:${nc}"
+    while IFS= read -r line; do
+        echo -e "${cyan}$line${nc}"
+    done < /tmp/modified_files.txt
     
     # Cleanup will be called automatically via the EXIT trap
 }
