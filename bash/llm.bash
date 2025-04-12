@@ -101,20 +101,11 @@ function capture_and_report_test_output() {
         while IFS= read -r line; do
             file_part=$(echo "$line" | cut -d':' -f1)
             desc_part=$(echo "$line" | cut -d':' -f2-)
-            echo -e "${cyan}$file_part${nc}:$desc_part"
+            # Print file path in cyan, then newline, then description
+            echo -e "${cyan}$file_part${nc}\n$desc_part"
         done < <(sort -u "$test_descriptions")
     else
         echo -e "No failing tests detected."
-    fi
-    
-    # Report failing test files
-    echo -e "\n${yellow}Failing test files:${nc}"
-    if [[ -f "$fail_file" && -s "$fail_file" ]]; then
-        while IFS= read -r line; do
-            echo -e "${cyan}$line${nc}"
-        done < <(sort -u "$fail_file")
-    else
-        echo -e "No failing test files detected."
     fi
     
     # Generate list of files modified in the current branch
