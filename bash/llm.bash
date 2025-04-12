@@ -1,21 +1,31 @@
 function capture_and_report_test_output() {
     local output_file="$1" # File to capture the command output
+    shift # Remove the first argument (output file)
+    local command_to_run="$@" # All remaining arguments form the command to run
     local fail_file="/tmp/failing_tests.txt" # Temporary file to store failing test filenames
+    local test_descriptions="/tmp/failing_test_descriptions.txt" # Store test descriptions
     
     # Check if output file is provided
     if [[ -z "$output_file" ]]; then
-        echo "Error: Please provide the output file as an argument."
+        echo "Error: Please provide the output file as the first argument."
+        return 1
+    fi
+    
+    # Check if command is provided
+    if [[ -z "$command_to_run" ]]; then
+        echo "Error: Please provide the command to run as the second argument."
         return 1
     fi
     
     # Clear any existing data
     > "$output_file"
     > "$fail_file"
+    > "$test_descriptions"
     
     # Function to clean up resources
     function cleanup() {
         # Remove temporary files
-        rm -f "$fail_file"
+        rm -f "$fail_file" "$test_descriptions"
         echo "Cleanup complete."
     }
     
@@ -24,18 +34,29 @@ function capture_and_report_test_output() {
     
     echo "Running test command and capturing output..."
     
-    # Process the piped input line by line
+    # Execute the command and capture both stdout and stderr
+    # Use tee to display output in real-time while also saving to file
+    eval "$command_to_run" 2>&1 | tee "$output_file"
+    
+    echo "Tests completed."
+    
+    # Process the captured output for failing tests
     while IFS= read -r line; do
-        # Echo the line to terminal in real-time
-        echo "$line"
+        # Process lines for failing tests
+        if [[ "$line" =~ ^FAIL[[:space:]] ]]; then
+            # Extract the file path after module name
+            if [[ "$line" =~ ^FAIL[[:space:]]+[^[:space:]]+[[:space:]]+(.+) ]]; then
+                current_test_file="${BASH_REMATCH[1]}"
+                echo "$current_test_file" >> "$fail_file"
+                in_failing_test=true
+            fi
+        fi
         
-        # Append the line to the output file
-        echo "$line" >> "$output_file"
-        
-        # Detect failing tests - look for FAIL lines and file paths
-        if [[ "$line" =~ ^FAIL ]]; then
-            if [[ "$line" =~ ^FAIL[[:space:]]+([^[:space:]]+)[[:space:]]+([^[:space:]]+) ]]; then
-                echo "${BASH_REMATCH[2]}" >> "$fail_file"
+        # Detect test description lines that follow FAIL lines
+        if [[ "$in_failing_test" == true && "$line" =~ [[:space:]]*●[[:space:]] ]]; then
+            if [[ "$line" =~ ●[[:space:]]+(.+) ]]; then
+                current_test_desc="${BASH_REMATCH[1]}"
+                echo "$current_test_file: $current_test_desc" >> "$test_descriptions"
             fi
         fi
         
@@ -43,9 +64,17 @@ function capture_and_report_test_output() {
         if [[ "$line" =~ \(([^:]+\.(spec|test)\.(js|ts|tsx)):[0-9]+ ]]; then
             echo "${BASH_REMATCH[1]}" >> "$fail_file"
         fi
-    done
-    
-    echo "Tests completed."
+        
+        # Reset failing test tracking when we see a PASS line
+        if [[ "$line" =~ ^PASS ]]; then
+            in_failing_test=false
+        fi
+        
+        # Reset failing test tracking when we see a new test suite summary
+        if [[ "$line" =~ ^Test[[:space:]]Suites: ]]; then
+            in_failing_test=false
+        fi
+    done < "$output_file"
     
     # Determine the base branch
     local base_branch=$(git merge-base --fork-point $(git branch --show-current) 2>/dev/null || 
@@ -59,6 +88,14 @@ function capture_and_report_test_output() {
     local llm_prompt="Below is the output of failing tests. Please analyze and provide fixes for the issues:\n\n"
     llm_prompt+="$(cat "$output_file")"
     
+    # Report failing tests with descriptions
+    if [[ -f "$test_descriptions" && -s "$test_descriptions" ]]; then
+        echo -e "\nFailing tests with descriptions:"
+        sort -u "$test_descriptions"
+        llm_prompt+="\n\nFailing tests with descriptions:\n$(sort -u "$test_descriptions")"
+    fi
+    
+    # Report failing test files
     if [[ -f "$fail_file" && -s "$fail_file" ]]; then
         echo -e "\nFailing test files:"
         sort -u "$fail_file"
