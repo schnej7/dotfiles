@@ -119,3 +119,136 @@ function ai_help_me_test() {
     
     # Cleanup will be called automatically via the EXIT trap
 }
+
+# Bash completion function for ai_help_me_test
+_ai_help_me_test_complete() {
+    local cur prev words cword
+    
+    # Check if _init_completion is available (from bash-completion package)
+    if declare -F _init_completion >/dev/null 2>&1; then
+        _init_completion || return
+    else
+        # Fallback implementation if _init_completion is not available
+        COMPREPLY=()
+        # Get the current word being completed
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        # Get the previous word
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+        # Copy the array of words in the current command line
+        words=("${COMP_WORDS[@]}")
+        # Get the current word position
+        cword=$COMP_CWORD
+    fi
+
+    # If we're completing the first argument, suggest files
+    if [ $cword -eq 1 ]; then
+        # If _filedir is not available, use a basic file completion
+        if declare -F _filedir >/dev/null 2>&1; then
+            _filedir
+        else
+            # Basic file completion fallback
+            COMPREPLY=($(compgen -f -- "$cur"))
+        fi
+        return 0
+    fi
+
+    # If we're completing the second argument, suggest available commands
+    if [ $cword -eq 2 ]; then
+        COMPREPLY=($(compgen -c -- "$cur"))
+        return 0
+    fi
+
+    # For third and subsequent arguments, forward completion to the command
+    if [ $cword -ge 3 ]; then
+        # Get the command that we're wrapping (second argument)
+        local cmd="${words[2]}"
+        
+        # Check if the command exists
+        if ! command -v "$cmd" &> /dev/null; then
+            return 0
+        fi
+
+        # Get the arguments for the command (everything after the command)
+        local cmd_args=()
+        for ((i=3; i<cword; i++)); do
+            cmd_args+=("${words[i]}")
+        done
+        
+        # Get the completion for the command
+        local cmd_completion=""
+        
+        # Try to get the completion spec for the command
+        local completion_spec=$(complete -p "$cmd" 2>/dev/null || echo "")
+        
+        if [[ -n "$completion_spec" ]]; then
+            # Check if it uses a completion function (-F)
+            if [[ "$completion_spec" =~ -F[[:space:]]+([^[:space:]]+) ]]; then
+                local comp_func="${BASH_REMATCH[1]}"
+                
+                # Create a temporary environment to run the completion function
+                local tmp_COMP_LINE="$cmd ${cmd_args[*]} $cur"
+                local tmp_COMP_WORDS=("$cmd" "${cmd_args[@]}" "$cur")
+                local tmp_COMP_CWORD=$((${#cmd_args[@]} + 1))
+                local tmp_COMP_POINT=${#tmp_COMP_LINE}
+                
+                # Save original environment
+                local old_COMP_LINE="$COMP_LINE"
+                local old_COMP_WORDS=("${COMP_WORDS[@]}")
+                local old_COMP_CWORD="$COMP_CWORD"
+                local old_COMP_POINT="$COMP_POINT"
+                
+                # Set up environment for the completion function
+                COMP_LINE="$tmp_COMP_LINE"
+                COMP_WORDS=("${tmp_COMP_WORDS[@]}")
+                COMP_CWORD="$tmp_COMP_CWORD"
+                COMP_POINT="$tmp_COMP_POINT"
+                
+                # Run the completion function
+                $comp_func
+                
+                # Save the results
+                local results=("${COMPREPLY[@]}")
+                
+                # Restore original environment
+                COMP_LINE="$old_COMP_LINE"
+                COMP_WORDS=("${old_COMP_WORDS[@]}")
+                COMP_CWORD="$old_COMP_CWORD"
+                COMP_POINT="$old_COMP_POINT"
+                
+                # Set the completion results
+                COMPREPLY=("${results[@]}")
+                
+                return 0
+            elif [[ "$completion_spec" =~ -C[[:space:]]+([^[:space:]]+) ]]; then
+                # Command-based completion
+                local comp_cmd="${BASH_REMATCH[1]}"
+                
+                # Build the command line for the completion command
+                local cmd_line="$cmd ${cmd_args[*]} $cur"
+                
+                # Run the completion command and capture the output
+                COMPREPLY=($(eval "$comp_cmd" "$cmd_line" "$cur"))
+                
+                return 0
+            fi
+        fi
+        
+        # If we get here, we couldn't find a specific completion method
+        # Try a generic approach based on the command type
+        
+        # Check if it's a git command
+        if [[ "$cmd" == "git" && ${#cmd_args[@]} -eq 0 ]]; then
+            # Git subcommands
+            COMPREPLY=($(compgen -W "$(git help -a | grep -E '^  [a-z]' | awk '{print $1}' | sort -u)" -- "$cur"))
+            return 0
+        fi
+        
+        # Default to file completion
+        COMPREPLY=($(compgen -f -- "$cur"))
+    fi
+    
+    return 0
+}
+
+# Register the completion function with the ai_help_me_test command
+complete -F _ai_help_me_test_complete ai_help_me_test
