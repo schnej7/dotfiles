@@ -9,6 +9,7 @@ function ai_help_me_test() {
     local cyan='\033[0;36m'
     local green='\033[0;32m'
     local yellow='\033[0;33m'
+    local red='\033[0;31m'
     local nc='\033[0m' # No Color
     
     # Check if output file is provided
@@ -81,12 +82,107 @@ function ai_help_me_test() {
         fi
     done < "$output_file"
     
-    # Determine the base branch
-    local base_branch=$(git merge-base --fork-point $(git branch --show-current) 2>/dev/null || 
-                       git main-branch 2>/dev/null || 
-                       echo "master")
+    # Determine the base branch using the algorithm:
+    # 1. Get current branch name
+    # 2. Iterate through git log
+    # 3. For each commit, check if it's the HEAD of a branch other than current branch
+    # 4. If found, that's our base branch
+    local base_branch=""
+    local current_branch=$(git branch --show-current)
     
-    echo -e "${green}Parent branch determined as:${nc} $base_branch"
+    echo -e "${green}Determining parent branch by analyzing commit history...${nc}"
+    echo -e "${cyan}Current branch:${nc} $current_branch"
+    
+    # Get the raw git log output with all branch references
+    local git_log_output=$(git log --pretty=format:"%H %d" -n 100)
+    
+    # Process each commit in the log
+    while IFS= read -r line; do
+        if [[ -z "$line" ]]; then
+            continue
+        fi
+        
+        # Extract commit hash and branch info
+        local commit_hash=$(echo "$line" | awk '{print $1}')
+        local branch_info=$(echo "$line" | sed -E 's/^[a-f0-9]+ //')
+        
+        # If we have branch info (in parentheses)
+        if [[ "$branch_info" =~ \((.*)\) ]]; then
+            local branches="${BASH_REMATCH[1]}"
+            
+            # Split by commas only, not spaces
+            IFS=',' read -ra BRANCH_ARRAY <<< "$branches"
+            for branch_entry in "${BRANCH_ARRAY[@]}"; do
+                # Trim leading/trailing whitespace
+                branch_entry=$(echo "$branch_entry" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+                
+                # Handle "HEAD -> branch-name" format
+                if [[ "$branch_entry" == "HEAD"* && "$branch_entry" == *"->"* ]]; then
+                    # Extract the branch name after the arrow
+                    branch=$(echo "$branch_entry" | sed -e 's/^HEAD[[:space:]]*->[[:space:]]*//')
+                else
+                    branch="$branch_entry"
+                fi
+                
+                # Skip if it's just "HEAD" or "->"
+                if [[ "$branch" == "HEAD" || "$branch" == "->" ]]; then
+                    continue
+                fi
+                
+                # Skip if it's the current branch or points to current branch
+                if [[ "$branch" == "$current_branch" || "$branch" == "origin/$current_branch" ]]; then
+                    continue
+                fi
+                
+                # Remove "origin/" prefix if present for comparison
+                local clean_branch="$branch"
+                if [[ "$clean_branch" == origin/* ]]; then
+                    clean_branch="${clean_branch#origin/}"
+                fi
+                
+                # We found a base branch
+                base_branch="$clean_branch"
+                local short_commit=$(echo "$commit_hash" | cut -c 1-10)
+                local commit_msg=$(git log -1 --pretty=format:"%s" "$commit_hash")
+                echo -e "${green}Found parent branch at commit ${cyan}$short_commit${green}:${nc} $base_branch"
+                echo -e "${cyan}Commit message:${nc} $commit_msg"
+                break 2  # Break out of both loops
+            done
+        else
+            # If no branch info in the log line, try to get it directly
+            local branches=$(git branch -a --contains "$commit_hash" --format="%(refname:short)" | grep -v "$current_branch")
+            
+            if [[ -n "$branches" ]]; then
+                # Take the first branch that's not the current branch
+                for branch in $branches; do
+                    # Skip if it's the current branch or points to current branch
+                    if [[ "$branch" == "$current_branch" || "$branch" == "origin/$current_branch" ]]; then
+                        continue
+                    fi
+                    
+                    # Remove "origin/" prefix if present
+                    local clean_branch="$branch"
+                    if [[ "$clean_branch" == origin/* ]]; then
+                        clean_branch="${clean_branch#origin/}"
+                    fi
+                    
+                    # We found a base branch
+                    base_branch="$clean_branch"
+                    local short_commit=$(echo "$commit_hash" | cut -c 1-10)
+                    local commit_msg=$(git log -1 --pretty=format:"%s" "$commit_hash")
+                    echo -e "${green}Found parent branch at commit ${cyan}$short_commit${green}:${nc} $base_branch"
+                    echo -e "${cyan}Commit message:${nc} $commit_msg"
+                    break 2  # Break out of both loops
+                done
+            fi
+        fi
+    done <<< "$git_log_output"
+    
+    # If we still don't have a base branch, use "master" as fallback
+    if [[ -z "$base_branch" ]]; then
+        base_branch="master"  # Default fallback
+        echo -e "${yellow}Could not determine parent branch from commit history. Using default:${nc} ${cyan}$base_branch${nc}"
+    fi
     
     # Generate LLM prompt with new format
     echo -e "${green}Generating LLM prompt...${nc}"
