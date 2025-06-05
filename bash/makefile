@@ -6,7 +6,6 @@ base:
 
 aliases:
 	ln -sf $(CURDIR)/aliases.bash ~/.bash_aliases
-	ln -sf $(CURDIR)/llm.bash ~/.llm.bash
 
 profile:
 	ln -sf $(CURDIR)/profile.bash ~/.bash_profile
