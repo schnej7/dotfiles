@@ -75,38 +75,41 @@ source "$HOME/.bash_colors"
 
 PROMPT_COMMAND=precmd
 
-info-git-branch(){
-    TEMP=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
-    echo $TEMP
-    if [ -n "$TEMP" ]; then
-        return 1;
-    fi
-    return 0
-}
+# Optimized git info - single call to git status instead of 3
+get-git-info(){
+    # Get git branch (fast operation)
+    local branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
 
-info-git-commits(){
-    TEMP=$(git status --porcelain 2>/dev/null | grep '^[^? ] ')
-    if [ -n "$TEMP" ]; then
-        echo "1"
-        return 1
+    if [ -z "$branch" ]; then
+        GIT_BRANCH=""
+        GIT_HAS_COMMITS=""
+        GIT_HAS_CHANGES=""
+        return 0
     fi
-    echo "0"
-    return 0
-}
 
-info-git-changes(){
-    TEMP=$(git status --porcelain 2>/dev/null | grep '^?? ')
-    if [ -n "$TEMP" ]; then
-        echo "1"
-        return 1
+    # Single call to git status (was called 3 times before)
+    local status=$(git status --porcelain 2>/dev/null)
+
+    # Parse status output once for both staged and unstaged changes
+    local has_commits=""
+    local has_changes=""
+
+    if [ -n "$status" ]; then
+        # Check for staged changes (first character is not space or ?)
+        if echo "$status" | grep -q '^[^? ] '; then
+            has_commits="1"
+        fi
+
+        # Check for untracked or unstaged changes
+        if echo "$status" | grep -q '^?? \|^.[^ ] '; then
+            has_changes="1"
+        fi
     fi
-    TEMP=$(git status --porcelain 2>/dev/null | grep '^.[^ ] ')
-    if [ -n "$TEMP" ]; then
-        echo "1"
-        return 1
-    fi
-    echo "0"
-    return 0
+
+    # Set global variables for use in precmd
+    GIT_BRANCH="$branch"
+    GIT_HAS_COMMITS="$has_commits"
+    GIT_HAS_CHANGES="$has_changes"
 }
 
 cur-hist() {
@@ -114,19 +117,21 @@ cur-hist() {
 }
 
 precmd(){
-    GIT_BRANCH=$(info-git-branch)
+    # Single optimized call to get all git info
+    get-git-info
+
     SPACE=""
     if [ -n "$GIT_BRANCH" ]; then
-        COMMITS=$(info-git-commits)
-        if [ $? -eq 1 ]; then
+        # Check for staged changes (commits ready)
+        if [ -n "$GIT_HAS_COMMITS" ]; then
             COMMITS="${bldcyn}×"
             SPACE=" "
         else
             COMMITS=""
         fi
 
-        CHANGES=$(info-git-changes)
-        if [ $? -eq 1 ]; then
+        # Check for unstaged/untracked changes
+        if [ -n "$GIT_HAS_CHANGES" ]; then
             CHANGES="${bldcyn}+"
             SPACE=" "
         else
