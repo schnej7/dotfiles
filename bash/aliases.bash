@@ -215,8 +215,7 @@ enter_docker() {
   selection="$(printf '%s\n' "$list" | fzf \
     --prompt='containers> ' \
     --header=$'Enter: exec sh  |  Ctrl-C/Esc: cancel' \
-    --preview 'cid=$(echo {} | cut -d" " -f1); docker inspect "$cid" --format "{{.Name}} {{.Created}} {{.Path}}" | sed "s/ /\\n/g"' \
-    --layout=reverse \
+    --preview 'cid=$(echo {} | cut -d" " -f1); echo -e "$(docker inspect "$cid" --format "{{.Name}} {{.Created}} {{.Path}}" | sed "s/ /\\n/g")\n\n\nLogs:\n\n$(docker logs $cid)"' \
     --with-nth=1,2,3,4,5)" || return 0
 
   # Extract the container ID (first field, left side)

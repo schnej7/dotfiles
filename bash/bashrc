@@ -161,7 +161,7 @@ precmd(){
 
 }
 
-export FZF_DEFAULT_OPTS="--bind ctrl-b:preview-page-up,ctrl-f:preview-page-down --preview 'bat --style=numbers --color=always --line-range :500 {}'"
+export FZF_DEFAULT_OPTS="--bind ctrl-b:preview-page-up,ctrl-f:preview-page-down --layout=reverse --preview 'bat --style=numbers --color=always --line-range :500 {}'"
 
 
 ## OSX Stuff

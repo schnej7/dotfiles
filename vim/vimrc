@@ -1,14 +1,14 @@
 filetype on
 filetype plugin on
-set softtabstop=2 tabstop=2 shiftwidth=2 expandtab
-autocmd FileType html setlocal sw=2 ts=2 sts=2
-autocmd FileType js setlocal sw=2 ts=2 sts=2
-autocmd FileType vue setlocal sw=2 ts=2 sts=2
-autocmd FileType css setlocal sw=2 ts=2 sts=2
-autocmd FileType less setlocal sw=2 ts=2 sts=2
-autocmd FileType vue setlocal sw=2 ts=2 sts=2
-autocmd FileType ts setlocal sw=2 ts=2 sts=2
-autocmd FileType typescript setlocal sw=2 ts=2 sts=2
+set softtabstop=4 tabstop=4 shiftwidth=4 expandtab
+autocmd FileType html setlocal sw=4 ts=4 sts=4
+autocmd FileType js setlocal sw=4 ts=4 sts=4
+autocmd FileType vue setlocal sw=4 ts=4 sts=4
+autocmd FileType css setlocal sw=4 ts=4 sts=4
+autocmd FileType less setlocal sw=4 ts=4 sts=4
+autocmd FileType vue setlocal sw=4 ts=4 sts=4
+autocmd FileType ts setlocal sw=4 ts=4 sts=4
+autocmd FileType typescript setlocal sw=4 ts=4 sts=4
 autocmd FileType make set noexpandtab
 autocmd BufRead,BufNewFile *.jy set filetype=python
 autocmd BufRead,BufNewFile *.vue set filetype=html
