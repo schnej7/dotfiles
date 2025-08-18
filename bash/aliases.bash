@@ -32,7 +32,7 @@ function sedi() {
 
 # src ack (ignore non src directories)
 function sack(){
-  ack "$@" --ignore-dir=dist --ignore-dir=node_modules --ignore-dir=coverage --ignore-dir=test_results
+  ack "$@" --ignore-dir=dist --ignore-dir=node_modules --ignore-dir=coverage --ignore-dir=test_results --ignore-dir=static --ignore-dir=npm_build
 }
 
 # Recursive replace all
@@ -196,3 +196,33 @@ function deleteTag(){
 if [ -f ~/.llm.bash ]; then
     . ~/.llm.bash
 fi
+
+enter_docker() {
+  command -v docker >/dev/null 2>&1 || { echo "docker not found"; return 1; }
+  command -v fzf >/dev/null 2>&1 || { echo "fzf not found"; return 1; }
+
+  # Build a tab-separated list: ID (left) | other info (right)
+  local list
+  list="$(docker ps --format '{{.ID}} {{.Image}}')" || return 1
+  if [ -z "$list" ]; then
+    echo "No running containers."
+    return 0
+  fi
+
+  # Let the user pick a container in fzf
+  # Ctrl+C (or Esc) will cause fzf to exit non-zero, and we just return to the shell
+  local selection
+  selection="$(printf '%s\n' "$list" | fzf \
+    --prompt='containers> ' \
+    --header=$'Enter: exec sh  |  Ctrl-C/Esc: cancel' \
+    --preview 'cid=$(echo {} | cut -d" " -f1); docker inspect "$cid" --format "{{.Name}} {{.Created}} {{.Path}}" | sed "s/ /\\n/g"' \
+    --layout=reverse \
+    --with-nth=1,2,3,4,5)" || return 0
+
+  # Extract the container ID (first field, left side)
+  local cid
+  cid="$(printf '%s' "$selection" | cut -d" " -f1)"
+
+  # Enter the container with sh
+  docker exec -it "$cid" sh
+}
