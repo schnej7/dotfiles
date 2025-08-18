@@ -197,7 +197,7 @@ if [ -f ~/.llm.bash ]; then
     . ~/.llm.bash
 fi
 
-enter_docker() {
+docker-select() {
   command -v docker >/dev/null 2>&1 || { echo "docker not found"; return 1; }
   command -v fzf >/dev/null 2>&1 || { echo "fzf not found"; return 1; }
 
