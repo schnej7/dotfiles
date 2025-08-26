@@ -1,20 +1,88 @@
 # dotfiles
 Environment Configurations
 
-# Installation
+## Prerequisites
 
-`make` - Link base functionality
+### Required Tools
+- **Git** - For cloning and managing the repository
+- **Make** - For running installation commands
+- **Bash** - Shell environment
+- **Vim** - Text editor (configured with plugins)
 
-`make osx` - Link base functionality + OSX functionality
+### macOS Specific Requirements
+- **Homebrew** - Package manager (installed automatically with `make osx`)
+- **bash-completion** - Enhanced tab completion
 
-`make work` - Link base functionality + OSX functionality + private work functionality
+### Optional Enhancements
+- **fzf** - Fuzzy finder for enhanced file/branch selection
+- **bat** - Better `cat` with syntax highlighting
+- **ack** - Advanced text search tool
+- **screen** - Terminal multiplexer
+
+## Installation
+
+### Quick Start
+```bash
+git clone https://github.com/yourusername/dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
+make        # Basic installation
+```
+
+### Installation Profiles
+
+| Command | Includes | Best For |
+|---------|----------|----------|
+| `make` | Bash, Vim, Screen, SSH | Linux/Basic setup |
+| `make osx` | Base + macOS features | macOS users |  
+| `make work` | macOS + Private configs | Work environment |
+
+### What Gets Installed
+
+Each profile creates symbolic links:
+- `~/.bashrc` → `bash/bashrc`
+- `~/.vimrc` → `vim/vimrc`
+- `~/.screenrc` → `screen/screenrc`
+- `~/.bash_aliases` → `bash/aliases.bash`
+- `~/.bash_colors` → `bash/bash_colors.bash`
+- `~/.inputrc` → `bash/inputrc`
+- And more...
+
+### First Time Setup
+After installation:
+1. Restart your terminal or run `source ~/.bashrc`
+2. Open vim and run `:PlugInstall` to install plugins
+3. For LSP features in vim, run `:call StartLsp()`
+
+## Repository Structure
+
+```
+dotfiles/
+├── bash/                  # Bash configuration
+│   ├── bashrc            # Main bash configuration
+│   ├── aliases.bash      # Command aliases and functions
+│   ├── bash_colors.bash  # Color definitions for prompt
+│   ├── profile.bash      # Bash profile loader
+│   ├── inputrc          # Readline configuration (vi mode)
+│   └── osx/             # macOS-specific configurations
+├── vim/                  # Vim configuration
+│   ├── vimrc            # Main vim configuration  
+│   └── pack/            # Vim plugin packages (git submodules)
+├── screen/              # GNU Screen configuration
+│   └── screenrc         # Screen settings
+└── private/             # Private/sensitive configurations
+    ├── ssh/             # SSH configuration
+    └── bash/            # Work-specific bash settings
+```
+
+## How It Works
+
+The dotfiles use symbolic links to connect configuration files to their expected locations in your home directory. The Makefile system provides different installation profiles:
+
+- **Base** (`make`): Core bash, vim, screen, and SSH configurations
+- **macOS** (`make osx`): Base + macOS-specific enhancements 
+- **Work** (`make work`): macOS + private work configurations
 
 # Features
-
-* Improved bash prompt
-* Bash aliases
-* Screen configurations + utilities
-* Vim configurations + plugins
 
 ## Bash Prompt
 
@@ -26,38 +94,130 @@ $
 ```
 `git-branch-status`:
 * `+` = Unstaged changes
-* `x` = Staged changes not yet committed
+* `×` = Staged changes not yet committed
 
-## Bash Aliases
+## Git & Development Workflow
 
-These are my most used aliases, there are more in [aliases.bash](https://github.com/schnej7/dotfiles/blob/main/bash/aliases.bash)
+### Branch Management
+- `branch` - Interactive branch selector with preview using fzf
+- `master` - Quick switch to master branch  
+- `push` - Push current branch to origin with upstream tracking
+- `giff <commit>` - Interactive diff viewer for specific commit
 
-`f <filename>` - case insensitive find
+### Code Analysis
+- `kill-count` - Show line count contributions by author
+- `replace <old> <new> <dir>` - Recursive find and replace with preview
+- `sack <pattern>` - Search code excluding common directories (node_modules, dist, etc.)
+- `osack <pattern>` - Open files containing pattern in vim
 
-`o <filename>` - open all files matching `<filename>` in vim
+### File Management
+- `f <pattern>` - Find files by name (excludes node_modules/dist)
+- `fa <pattern>` - Find files by name (includes all directories)
+- `o <pattern>` - Open matching files in vim with fzf selection
+- `dirspace <dir>` - Show disk usage for directory
 
-`ns` - new screen session
+## Screen Session Management
 
-`sl` - list all screen sessions
+- `s` - Attach to first detached session or create new one
+- `ns` - Create new screen session
+- `rs` - Resume first detached screen session
+- `x <name>` - Attach to named session
+- `sl` - List all screen sessions
+- `dsl` - List detached sessions
+- `ksl` - Kill all screen sessions
+- `kdsl` - Kill all detached sessions
 
-`kill-count` - get line count in git repo by author
+**Screen Features:**
+- 10,000 line scrollback buffer
+- Multi-user support enabled
+- Auto-detach functionality
 
-## Vim Quick Keys
+## Docker Utilities
 
-`enter` - Toggle line numbers
+- `docker-select` - Interactive container selector with preview and shell access
 
-`Ctrl+n` - Toggle relative line numbers
+## Vim Configuration
 
-`Ctrl+h` - Hover tip
+### LSP Features (Language Server Protocol)
+- `Ctrl+h` - Show hover documentation
+- `-` - Show code actions/quick fixes  
+- `0` - Find all references
+- `3` - Rename symbol
+- `gi` - Go to implementation (when LSP enabled)
+- `gd` - Go to declaration (when LSP enabled)
+- `gr` - Find references (when LSP enabled)
+- `gl` - Show diagnostics (when LSP enabled)
 
-`0` - Find all references
+### Navigation & Management
+- `Enter` - Toggle line numbers on/off
+- `Ctrl+n` - Toggle relative line numbers
+- `1` - Close all tabs except current
+- `2` - Buffer selector
+- `8` - Open quickfix window
+- `9` - Close quickfix window
 
-`1` - Close all tabs but the current tab
+### Plugins Included
+- **vim-lsp** - Language Server Protocol support
+- **vim-lsp-settings** - Automatic LSP server installation
+- **vim-fugitive** - Git integration
+- **JavaScript/TypeScript/JSX** - Full syntax highlighting and support
 
-`2` - Navigate tabs
+### Key Features
+- Vi command line mode enabled
+- Automatic plugin installation via vim-plug
+- LSP disabled by default (call `:StartLsp()` when needed)
+- Smart indentation for multiple file types
+- Enhanced quickfix window navigation
 
-`8` - Open quick fix
+## Bash Environment Features
 
-`9` - Close quick fix
+### Vi Mode & Readline
+- Vi command line editing mode
+- Custom readline shortcuts:
+  - `Ctrl+s` - Source ~/.bashrc
+  - `Ctrl+l` - Clear screen
+  - `Ctrl+a` - Beginning of line
+  - `Ctrl+e` - End of line
 
-`-` - Quick Fix lsp code action (suggestions to fix lsp error at cursor)
+### Enhanced Tools Integration
+- **fzf** configured with bat preview and reverse layout
+- **git completion** for branch names and commands
+- **Optimized git status** parsing for faster prompt updates
+- **CDPATH** includes home directory for easier navigation
+
+## Customization
+
+### Adding Personal Aliases
+Add your custom aliases to `bash/aliases.bash` or create a local `~/.bash_local` file:
+
+```bash
+# In ~/.bash_local (sourced automatically if it exists)
+alias myalias='echo "Hello World"'
+```
+
+### Vim Customization
+- Edit `vim/vimrc` for vim settings
+- Add plugins in the `InitPlugins()` function
+- Custom keybindings can be added after the existing mappings
+
+### Private Configurations
+The `private/` directory is for sensitive configurations:
+- `private/bash/work.bash` - Work-specific environment variables
+- `private/ssh/config` - SSH host configurations
+- This directory can be a separate git repository for security
+
+### Color Customization
+Bash prompt colors are defined in `bash/bash_colors.bash`:
+- Regular colors: `txtred`, `txtgrn`, `txtblu`, etc.
+- Bold colors: `bldred`, `bldgrn`, `bldblu`, etc.
+- Script colors: `sh_red`, `sh_grn`, `sh_blu`, etc.
+
+## Legacy Aliases
+
+These are the most commonly used aliases (more available in [aliases.bash](https://github.com/schnej7/dotfiles/blob/main/bash/aliases.bash)):
+
+- `f <filename>` - Case insensitive find
+- `o <filename>` - Open all files matching `<filename>` in vim
+- `ns` - New screen session
+- `sl` - List all screen sessions
+- `kill-count` - Get line count in git repo by author
