@@ -1,0 +1,4 @@
+"\C-s": "source ~/.bashrc\n"
+"\C-l": "clear\n"
+"\C-a": beginning-of-line
+"\C-e": end-of-line

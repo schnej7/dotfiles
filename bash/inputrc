@@ -1,0 +1,7 @@
+$if mode=vi
+    set keymap vi-command
+    $include ~/.inputrc.vi-common
+
+    set keymap vi-insert
+    $include ~/.inputrc.vi-common
+$endif

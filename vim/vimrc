@@ -13,6 +13,7 @@ autocmd FileType make set noexpandtab
 autocmd BufRead,BufNewFile *.jy set filetype=python
 autocmd BufRead,BufNewFile *.vue set filetype=html
 autocmd BufRead,BufNewFile .clarirc set filetype=bash
+au BufNewFile,BufRead .inputrc.* set filetype=readline
 au BufRead,BufNewFile *.vm set ft=html syntax=velocity
 au BufRead,BufNewFile *.dust set ft=html syntax=velocity
 au BufRead,BufNewFile *.less set ft=css syntax=css
