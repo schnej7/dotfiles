@@ -7,6 +7,44 @@ function giff() {
   git diff $1 $FILES
 }
 
+function add() {
+  # Get files that need to be staged during rebase
+  # This includes: unmerged paths (conflicts), modified files, new files, etc.
+  local files
+  files=$(git status --porcelain | grep -E '^(UU|AA|DD|AU|UA|DU|UD)' | sed 's/^...//')
+  
+  # If no merge conflicts, check for regular unstaged files
+  if [[ -z "$files" ]]; then
+    files=$(git status --porcelain | grep -E '^ M | A | D |^\?\?' | sed 's/^...//')
+  fi
+  
+  # Sort and remove duplicates
+  files=$(printf '%s\n' "$files" | sort -u)
+  
+  if [[ -z "$files" ]]; then
+    echo "No files need to be staged."
+    return 0
+  fi
+  
+  # Use fzf to select files with appropriate preview
+  local selected_files
+  selected_files=$(printf '%s\n' "$files" | fzf -m \
+    --header='Select files to stage (Tab: multi-select, Enter: confirm)' \
+    --preview 'cd $(git rev-parse --show-toplevel) && 
+                 git diff --color=always {} 2>/dev/null || git diff --cached --color=always {} 2>/dev/null || echo "New file or binary"; 
+              ' \
+    --preview-window=right:60%:wrap)
+  
+  if [[ -n "$selected_files" ]]; then
+    # Convert newlines to array and add each file
+    while IFS= read -r file; do
+      (
+        cd $(git rev-parse --show-toplevel) && [[ -n "$file" ]] && git add "$file" && echo "Staged: $file"
+      )
+    done <<< "$selected_files"
+  fi
+}
+
 function branch() {
   git branch -a --sort=-committerdate | \
   fzf --no-sort --header 'git checkout' \
