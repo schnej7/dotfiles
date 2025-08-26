@@ -292,3 +292,90 @@ cdf() {
   selection="$(printf '%s\n' "${subdirs[@]}" | awk '!seen[$0]++' | fzf ${1:+-q "$1"} --preview 'ls {}')" || return
   [[ -n "$selection" ]] && builtin cd -P "$selection"
 }
+
+# Interactive git commit with conventional commit format
+function commit() {
+  # Check if we're in a git repository
+  git rev-parse --git-dir &> /dev/null
+  if [[ $? -ne 0 ]]; then
+    echo "Error: Not in a git repository"
+    return 1
+  fi
+
+  # Get current branch name
+  local branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+  if [[ -z "$branch" ]]; then
+    echo "Error: Unable to determine current branch"
+    return 1
+  fi
+
+  # Extract ticket number (first part of branch name before - or /)
+  local ticket=""
+  if [[ "$branch" =~ ^([^/-]+) ]]; then
+    ticket="${BASH_REMATCH[1]}"
+  fi
+
+  # Get subject from environment variable
+  local subject="${COMMIT_SUBJECT:-}"
+  if [[ -z "$subject" ]]; then
+    echo "Warning: COMMIT_SUBJECT environment variable not set"
+  fi
+
+  # Define commit types with descriptions
+  local -a types=(
+    "feat: Introduces a new feature to the codebase"
+    "fix: Patches a bug in the codebase"
+    "docs: Changes related to documentation only"
+    "style: Changes that do not affect the meaning of the code"
+    "refactor: Code changes that neither fix a bug nor add a feature"
+    "perf: Code changes specifically for improving performance"
+    "test: Adding missing tests or correcting existing tests"
+    "build: Changes that affect the build system or external dependencies"
+    "ci: Changes to CI/CD configuration files and scripts"
+    "chore: Miscellaneous changes that don't fall into other categories"
+    "revert: Reverting a previous commit"
+  )
+
+  # Use fzf to select commit type
+  local selected_type=$(printf '%s\n' "${types[@]}" | fzf \
+    --prompt='Select commit type: ' \
+    --height=40% \
+    --reverse \
+    --header='Select the type of change you are committing')
+  
+  if [[ -z "$selected_type" ]]; then
+    echo "No commit type selected. Aborting."
+    return 1
+  fi
+
+  # Extract just the type part (before the colon)
+  local type=$(echo "$selected_type" | cut -d':' -f1)
+
+  # Build commit message template
+  local commit_msg
+  if [[ -n "$ticket" ]]; then
+    commit_msg="${type}(${subject}): description [${ticket}]"
+  else
+    commit_msg="${type}(${subject}): description"
+  fi
+
+  # Create temporary file for commit message
+  local temp_file=$(mktemp)
+  echo "$commit_msg" > "$temp_file"
+
+  # Open editor (respecting EDITOR environment variable, defaulting to vim)
+  "${EDITOR:-vim}" "$temp_file"
+
+  # Read the final message
+  local final_msg=$(cat "$temp_file")
+  rm "$temp_file"
+
+  # Check if user made meaningful changes (not just the template)
+  if [[ "$final_msg" = "$commit_msg" ]] || [[ -z "$final_msg" ]] || [[ "$final_msg" =~ description ]]; then
+    echo "Commit message was not properly filled out. Aborting."
+    return 1
+  fi
+
+  # Perform the git commit
+  git commit -m "$final_msg"
+}
