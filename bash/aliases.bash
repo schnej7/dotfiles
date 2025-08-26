@@ -225,22 +225,32 @@ docker-select() {
   docker exec -it "$cid" sh
 }
 
-# fzf over the exact directories listed in $CDPATH
+# fzf over subdirectories within $CDPATH directories
 cdf() {
   command -v fzf >/dev/null || { echo "fzf not found" >&2; return 1; }
 
   local IFS=':' path abs selection
-  local -a entries=($CDPATH) out=()
+  local -a entries=($CDPATH) cdpath_dirs=() subdirs=()
 
+  # First, collect all valid CDPATH directories
   for path in "${entries[@]}"; do
     [[ -z "$path" ]] && continue
     [[ "$path" == "~"* ]] && path="${path/#\~/$HOME}"
     abs="$( (builtin cd -P "$path" 2>/dev/null && pwd) )" || continue
-    [[ -n "$abs" ]] && out+=("$abs")
+    [[ -n "$abs" ]] && cdpath_dirs+=("$abs")
   done
 
-  [[ ${#out[@]} -eq 0 ]] && { echo "No valid CDPATH directories" >&2; return 1; }
+  [[ ${#cdpath_dirs[@]} -eq 0 ]] && { echo "No valid CDPATH directories" >&2; return 1; }
 
-  selection="$(printf '%s\n' "${out[@]}" | awk '!seen[$0]++' | fzf ${1:+-q "$1"} --preview 'ls {}')" || return
+  # Then, collect all subdirectories within those CDPATH directories
+  for path in "${cdpath_dirs[@]}"; do
+    while IFS= read -r -d '' subdir; do
+      subdirs+=("$subdir")
+    done < <(find "$path" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null)
+  done
+
+  [[ ${#subdirs[@]} -eq 0 ]] && { echo "No subdirectories found in CDPATH" >&2; return 1; }
+
+  selection="$(printf '%s\n' "${subdirs[@]}" | awk '!seen[$0]++' | fzf ${1:+-q "$1"} --preview 'ls {}')" || return
   [[ -n "$selection" ]] && builtin cd -P "$selection"
 }
