@@ -25,6 +25,10 @@ function kill-count(){
     git ls-files -z | xargs -0rn 1 -P "$(nproc)" -I{} sh -c 'git blame -w -M -C -C --line-porcelain -- {} | grep -I --line-buffered "^author "' | sort -f | uniq -ic | sort -n
 }
 
+function push() {
+  git push origin $GIT_BRANCH --set-upstream
+}
+
 # inplace sed alias
 function sedi() {
   sed -i $@

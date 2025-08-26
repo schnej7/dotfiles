@@ -161,6 +161,9 @@ precmd(){
 
 }
 
+# Vi command line edit mode
+set -o vi
+
 export FZF_DEFAULT_OPTS="--bind ctrl-b:preview-page-up,ctrl-f:preview-page-down --layout=reverse --preview 'bat --style=numbers --color=always --line-range :500 {}'"
 
 
