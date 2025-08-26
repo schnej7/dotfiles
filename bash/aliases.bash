@@ -309,9 +309,9 @@ function commit() {
     return 1
   fi
 
-  # Extract ticket number (first part of branch name before - or /)
+  # Extract ticket number (format: LETTERS-NUMBERS from branch name)
   local ticket=""
-  if [[ "$branch" =~ ^([^/-]+) ]]; then
+  if [[ "$branch" =~ ^([A-Za-z]+-[0-9]+) ]]; then
     ticket="${BASH_REMATCH[1]}"
   fi
 
