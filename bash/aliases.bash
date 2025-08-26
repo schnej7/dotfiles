@@ -224,3 +224,23 @@ docker-select() {
   # Enter the container with sh
   docker exec -it "$cid" sh
 }
+
+# fzf over the exact directories listed in $CDPATH
+cdf() {
+  command -v fzf >/dev/null || { echo "fzf not found" >&2; return 1; }
+
+  local IFS=':' path abs selection
+  local -a entries=($CDPATH) out=()
+
+  for path in "${entries[@]}"; do
+    [[ -z "$path" ]] && continue
+    [[ "$path" == "~"* ]] && path="${path/#\~/$HOME}"
+    abs="$( (builtin cd -P "$path" 2>/dev/null && pwd) )" || continue
+    [[ -n "$abs" ]] && out+=("$abs")
+  done
+
+  [[ ${#out[@]} -eq 0 ]] && { echo "No valid CDPATH directories" >&2; return 1; }
+
+  selection="$(printf '%s\n' "${out[@]}" | awk '!seen[$0]++' | fzf ${1:+-q "$1"} --preview 'ls {}')" || return
+  [[ -n "$selection" ]] && builtin cd -P "$selection"
+}
