@@ -1,6 +1,9 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
+# Disable terminal flow control to allow Ctrl+S for custom bindings
+stty -ixon
+
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
 HISTCONTROL=ignoredups:ignorespace
@@ -187,5 +190,3 @@ fi
 # Created by `userpath` on 2025-07-21 19:43:30
 export PATH="$PATH:/Users/jschneider/.local/bin"
 export BASH_SILENCE_DEPRECATION_WARNING=1
-
-cdf "$CDF_DEFAULT"
