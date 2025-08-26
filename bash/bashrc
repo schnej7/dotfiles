@@ -69,6 +69,7 @@ fi
 ## Include home directory in CDPATH
 CDPATH=.:~/
 export CDPATH
+export CDF_DEFAULT=''
 
 # Modifing the prompt
 source "$HOME/.bash_colors"
@@ -187,4 +188,4 @@ fi
 export PATH="$PATH:/Users/jschneider/.local/bin"
 export BASH_SILENCE_DEPRECATION_WARNING=1
 
-cdf
+cdf "$CDF_DEFAULT"

@@ -114,6 +114,7 @@ $
 - `f <pattern>` - Find files by name (excludes node_modules/dist)
 - `fa <pattern>` - Find files by name (includes all directories)
 - `o <pattern>` - Open matching files in vim with fzf selection
+- `cdf [query]` - Interactive directory navigation using fzf to browse subdirectories within CDPATH
 - `dirspace <dir>` - Show disk usage for directory
 
 ## Screen Session Management
@@ -184,6 +185,30 @@ $
 - **git completion** for branch names and commands
 - **Optimized git status** parsing for faster prompt updates
 - **CDPATH** includes home directory for easier navigation
+
+### Interactive Directory Navigation (`cdf`)
+The `cdf` function provides fuzzy directory navigation for all subdirectories within your CDPATH:
+
+- **What it does**: Shows all immediate subdirectories within each CDPATH location for fzf selection
+- **Live preview**: Displays `ls` output of each directory as you navigate
+- **Smart navigation**: Uses `cd -P` to properly handle symbolic links
+- **Query support**: `cdf myproject` starts with "myproject" pre-filled in fzf
+- **Ergonomic design**: Navigate directly to project folders rather than parent directories
+- **Auto-startup**: Automatically launches when starting a new bash session (can be customized with `CDF_DEFAULT` environment variable)
+
+**Example**: If CDPATH includes `~/projects` and `~/work`, `cdf` shows:
+```
+~/projects/dotfiles
+~/projects/myapp
+~/projects/website  
+~/work/client1
+~/work/client2
+```
+
+**Customization**: Set `CDF_DEFAULT` environment variable to change startup behavior:
+- `export CDF_DEFAULT=""` - Default, shows all directories on startup
+- `export CDF_DEFAULT="myproject"` - Pre-filters to directories matching "myproject" 
+- Comment out the `cdf "$CDF_DEFAULT"` line in `bashrc` to disable auto-startup
 
 ## Customization
 
