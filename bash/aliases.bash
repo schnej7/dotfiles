@@ -341,6 +341,7 @@ function commit() {
     --prompt='Select commit type: ' \
     --height=40% \
     --reverse \
+    --preview='echo {}' \
     --header='Select the type of change you are committing')
   
   if [[ -z "$selected_type" ]]; then
