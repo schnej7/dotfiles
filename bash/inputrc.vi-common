@@ -4,4 +4,4 @@
 "\C-e": end-of-line
 
 # Navigation helpers
-"\C-f": "o\C-m"
+"\C-f": "browse\C-m"

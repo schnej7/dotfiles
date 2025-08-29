@@ -167,8 +167,12 @@ function browse() {
   # Create named pipe
   mkfifo "$fifo"
 
-  # Run find in background, writing to named pipe (suppress job control)
-  { (find . -type f -o -type d 2>/dev/null | sed 's|^\./||') > "$fifo"; } &
+  # Run find (or fd if available) in background, writing to named pipe (suppress job control)
+  if command -v fd >/dev/null 2>&1; then
+    { fd -H -t f -t d . > "$fifo"; } &
+  else
+    { (find . -type f -o -type d 2>/dev/null | sed 's|^\./||') > "$fifo"; } &
+  fi
   local find_pid=$!
 
   # Run fzf reading from named pipe
