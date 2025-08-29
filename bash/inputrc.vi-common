@@ -1,4 +1,7 @@
-"\C-s": "source ~/.bashrc\n"
-"\C-l": "clear\n"
+"\C-s": "sauce\C-m"
+"\C-l": "clear\C-m"
 "\C-a": beginning-of-line
 "\C-e": end-of-line
+
+# Navigation helpers
+"\C-f": "o\C-m"

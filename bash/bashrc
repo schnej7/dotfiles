@@ -1,6 +1,9 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
+export VISUAL=vim
+export EDITOR=$VISUAL
+
 # Disable terminal flow control to allow Ctrl+S for custom bindings
 stty -ixon
 
