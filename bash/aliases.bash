@@ -12,29 +12,29 @@ function add() {
   # This includes: unmerged paths (conflicts), modified files, new files, etc.
   local files
   files=$(git status --porcelain | grep -E '^(UU|AA|DD|AU|UA|DU|UD)' | sed 's/^...//')
-  
+
   # If no merge conflicts, check for regular unstaged files
   if [[ -z "$files" ]]; then
     files=$(git status --porcelain | grep -E '^ M | A | D |^\?\?' | sed 's/^...//')
   fi
-  
+
   # Sort and remove duplicates
   files=$(printf '%s\n' "$files" | sort -u)
-  
+
   if [[ -z "$files" ]]; then
     echo "No files need to be staged."
     return 0
   fi
-  
+
   # Use fzf to select files with appropriate preview
   local selected_files
   selected_files=$(printf '%s\n' "$files" | fzf -m \
     --header='Select files to stage (Tab: multi-select, Enter: confirm)' \
-    --preview 'cd $(git rev-parse --show-toplevel) && 
-                 git diff --color=always {} 2>/dev/null || git diff --cached --color=always {} 2>/dev/null || echo "New file or binary"; 
+    --preview 'cd $(git rev-parse --show-toplevel) &&
+                 git diff --color=always {} 2>/dev/null || git diff --cached --color=always {} 2>/dev/null || echo "New file or binary";
               ' \
     --preview-window=right:60%:wrap)
-  
+
   if [[ -n "$selected_files" ]]; then
     # Convert newlines to array and add each file
     while IFS= read -r file; do
@@ -155,6 +155,42 @@ function o() {
     if [[ ${FILE} ]]; then
       vim -O $FILE
     fi
+  fi
+}
+
+# Browse files and directories with fzf - cd to directories, open files with $EDITOR
+function browse() {
+  command -v fzf >/dev/null || { echo "fzf not found" >&2; return 1; }
+
+  local selection fifo="/tmp/browse_$$"
+
+  # Create named pipe
+  mkfifo "$fifo"
+
+  # Run find in background, writing to named pipe (suppress job control)
+  { (find . -type f -o -type d 2>/dev/null | sed 's|^\./||') > "$fifo"; } &
+  local find_pid=$!
+
+  # Run fzf reading from named pipe
+  selection=$(fzf ${1:+-q "$1"} --preview 'if [[ -d {} ]]; then ls -la {}; else bat --style=numbers --color=always --line-range :50 {} 2>/dev/null || cat {} 2>/dev/null || echo "Cannot preview file"; fi' < "$fifo")
+  local exit_code=$?
+
+  # Kill background process and cleanup (suppress all output)
+  kill $find_pid >/dev/null 2>&1
+  wait $find_pid >/dev/null 2>&1
+  rm -f "$fifo"
+
+  [[ $exit_code -ne 0 ]] && return $exit_code
+
+  [[ -z "$selection" ]] && return
+
+  if [[ -d "$selection" ]]; then
+    builtin cd "$selection"
+  elif [[ -f "$selection" ]]; then
+    ${EDITOR:-vim} "$selection"
+  else
+    echo "Selection is neither a file nor a directory: $selection" >&2
+    return 1
   fi
 }
 
@@ -343,7 +379,7 @@ function commit() {
     --reverse \
     --preview='echo {}' \
     --header='Select the type of change you are committing')
-  
+
   if [[ -z "$selected_type" ]]; then
     echo "No commit type selected. Aborting."
     return 1
