@@ -23,7 +23,7 @@ Environment Configurations
 
 ### Quick Start
 ```bash
-git clone https://github.com/yourusername/dotfiles.git ~/.dotfiles
+git clone --recursive https://github.com/schnej7/dotfiles.git
 cd ~/.dotfiles
 make        # Basic installation
 ```
