@@ -130,32 +130,57 @@ The `cdf` function provides fuzzy directory navigation for all subdirectories wi
 - `export CDF_DEFAULT="myproject"` - Pre-filters to directories matching "myproject"
 - Comment out the `cdf "$CDF_DEFAULT"` line in `bashrc` to disable auto-startup
 
-## Customization
+## Contributing
 
-### Adding Personal Aliases
-Add your custom aliases to `bash/aliases.bash` or create a local `~/.bash_local` file:
+This repository follows the [forking workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/forking-workflow), which allows contributors to propose changes without requiring direct write access to the main repository.
 
+### How to Contribute
+
+1. **Fork the repository** - Create your own server-side copy of this repository using GitHub's fork button
+
+2. **Clone your fork** - Download your fork to your local machine:
+   ```bash
+   git clone https://github.com/yourusername/dotfiles.git
+   cd dotfiles
+   ```
+
+3. **Add upstream remote** - Connect to the original repository to stay updated:
+   ```bash
+   git remote add upstream https://github.com/schnej7/dotfiles.git
+   ```
+
+4. **Create a feature branch** - Work on changes in a dedicated branch:
+   ```bash
+   git checkout -b feature/your-improvement
+   ```
+
+5. **Make your changes** - Edit files, test your modifications, and commit:
+   ```bash
+   git commit -am "Add your descriptive commit message"
+   ```
+
+6. **Push to your fork** - Upload your changes to your server-side repository:
+   ```bash
+   git push origin feature/your-improvement
+   ```
+
+7. **Open a pull request** - Use GitHub to propose merging your changes into the main repository
+
+### Staying Updated
+
+Keep your fork synchronized with the main repository:
 ```bash
-# In ~/.bash_local (sourced automatically if it exists)
-alias myalias='echo "Hello World"'
+git pull upstream main
+git push origin main
 ```
 
-### Vim Customization
-- Edit `vim/vimrc` for vim settings
-- Add plugins in the `InitPlugins()` function
-- Custom keybindings can be added after the existing mappings
+### Customization
 
-### Private Configurations
-The `private/` directory is for sensitive configurations:
-- `private/bash/work.bash` - Work-specific environment variables
-- `private/ssh/config` - SSH host configurations
-- This directory can be a separate git repository for security
-
-### Color Customization
-Bash prompt colors are defined in `bash/bash_colors.bash`:
-- Regular colors: `txtred`, `txtgrn`, `txtblu`, etc.
-- Bold colors: `bldred`, `bldgrn`, `bldblu`, etc.
-- Script colors: `sh_red`, `sh_grn`, `sh_blu`, etc.
+While contributing, you can customize your local setup:
+- Add personal aliases to `bash/aliases.bash`
+- Modify `vim/vimrc` for editor preferences
+- Use the `private/` directory for sensitive configurations
+- Adjust colors in `bash/bash_colors.bash`
 
 ## Legacy Aliases
 
