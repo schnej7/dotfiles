@@ -130,58 +130,6 @@ The `cdf` function provides fuzzy directory navigation for all subdirectories wi
 - `export CDF_DEFAULT="myproject"` - Pre-filters to directories matching "myproject"
 - Comment out the `cdf "$CDF_DEFAULT"` line in `bashrc` to disable auto-startup
 
-## Contributing
-
-This repository follows the [forking workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/forking-workflow), which allows contributors to propose changes without requiring direct write access to the main repository.
-
-### How to Contribute
-
-1. **Fork the repository** - Create your own server-side copy of this repository using GitHub's fork button
-
-2. **Clone your fork** - Download your fork to your local machine:
-   ```bash
-   git clone https://github.com/yourusername/dotfiles.git
-   cd dotfiles
-   ```
-
-3. **Add upstream remote** - Connect to the original repository to stay updated:
-   ```bash
-   git remote add upstream https://github.com/schnej7/dotfiles.git
-   ```
-
-4. **Create a feature branch** - Work on changes in a dedicated branch:
-   ```bash
-   git checkout -b feature/your-improvement
-   ```
-
-5. **Make your changes** - Edit files, test your modifications, and commit:
-   ```bash
-   git commit -am "Add your descriptive commit message"
-   ```
-
-6. **Push to your fork** - Upload your changes to your server-side repository:
-   ```bash
-   git push origin feature/your-improvement
-   ```
-
-7. **Open a pull request** - Use GitHub to propose merging your changes into the main repository
-
-### Staying Updated
-
-Keep your fork synchronized with the main repository:
-```bash
-git pull upstream main
-git push origin main
-```
-
-### Customization
-
-While contributing, you can customize your local setup:
-- Add personal aliases to `bash/aliases.bash`
-- Modify `vim/vimrc` for editor preferences
-- Use the `private/` directory for sensitive configurations
-- Adjust colors in `bash/bash_colors.bash`
-
 ## Legacy Aliases
 
 These are the most commonly used aliases (more available in [aliases.bash](https://github.com/schnej7/dotfiles/blob/main/bash/aliases.bash)):
@@ -272,3 +220,56 @@ The dotfiles use symbolic links to connect configuration files to their expected
 - **Base** (`make`): Core bash, vim, screen, and SSH configurations
 - **macOS** (`make osx`): Base + macOS-specific enhancements
 - **Work** (`make work`): macOS + private work configurations
+
+## Contributing
+
+This repository follows the [forking workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/forking-workflow), which allows contributors to propose changes without requiring direct write access to the main repository.
+
+### How to Contribute
+
+1. **Fork the repository** - Create your own server-side copy of this repository using GitHub's fork button
+
+2. **Clone your fork** - Download your fork to your local machine:
+   ```bash
+   git clone https://github.com/yourusername/dotfiles.git
+   cd dotfiles
+   ```
+
+3. **Add upstream remote** - Connect to the original repository to stay updated:
+   ```bash
+   git remote add upstream https://github.com/schnej7/dotfiles.git
+   ```
+
+4. **Create a feature branch** - Work on changes in a dedicated branch:
+   ```bash
+   git checkout -b feature/your-improvement
+   ```
+
+5. **Make your changes** - Edit files, test your modifications, and commit:
+   ```bash
+   git commit -am "Add your descriptive commit message"
+   ```
+
+6. **Push to your fork** - Upload your changes to your server-side repository:
+   ```bash
+   git push origin feature/your-improvement
+   ```
+
+7. **Open a pull request** - Use GitHub to propose merging your changes into the main repository
+
+### Staying Updated
+
+Keep your fork synchronized with the main repository:
+```bash
+git pull upstream main
+git push origin main
+```
+
+### Customization
+
+While contributing, you can customize your local setup:
+- Add personal aliases to `bash/aliases.bash`
+- Modify `vim/vimrc` for editor preferences
+- Use the `private/` directory for sensitive configurations
+- Adjust colors in `bash/bash_colors.bash`
+
