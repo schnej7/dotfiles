@@ -94,6 +94,7 @@ $
 ### Vi Mode & Readline
 - Vi command line editing mode
 - Custom readline shortcuts:
+  - `Ctrl+f` - Interactive file explorer
   - `Ctrl+s` - Source ~/.bashrc
   - `Ctrl+l` - Clear screen
   - `Ctrl+a` - Beginning of line
