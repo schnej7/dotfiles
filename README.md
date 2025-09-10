@@ -1,86 +1,5 @@
 # dotfiles
-Environment Configurations
-
-## Prerequisites
-
-### Required Tools
-- **Git** - For cloning and managing the repository
-- **Make** - For running installation commands
-- **Bash** - Shell environment
-- **Vim** - Text editor (configured with plugins)
-
-### macOS Specific Requirements
-- **Homebrew** - Package manager (installed automatically with `make osx`)
-- **bash-completion** - Enhanced tab completion
-
-### Optional Enhancements
-- **fzf** - Fuzzy finder for enhanced file/branch selection
-- **bat** - Better `cat` with syntax highlighting
-- **ack** - Advanced text search tool
-- **screen** - Terminal multiplexer
-
-## Installation
-
-### Quick Start
-```bash
-git clone --recursive https://github.com/schnej7/dotfiles.git
-cd ~/.dotfiles
-make        # Basic installation
-```
-
-### Installation Profiles
-
-| Command | Includes | Best For |
-|---------|----------|----------|
-| `make` | Bash, Vim, Screen, SSH | Linux/Basic setup |
-| `make osx` | Base + macOS features | macOS users |  
-| `make work` | macOS + Private configs | Work environment |
-
-### What Gets Installed
-
-Each profile creates symbolic links:
-- `~/.bashrc` → `bash/bashrc`
-- `~/.vimrc` → `vim/vimrc`
-- `~/.screenrc` → `screen/screenrc`
-- `~/.bash_aliases` → `bash/aliases.bash`
-- `~/.bash_colors` → `bash/bash_colors.bash`
-- `~/.inputrc` → `bash/inputrc`
-- And more...
-
-### First Time Setup
-After installation:
-1. Restart your terminal or run `source ~/.bashrc`
-2. Open vim and run `:PlugInstall` to install plugins
-3. For LSP features in vim, run `:call StartLsp()`
-
-## Repository Structure
-
-```
-dotfiles/
-├── bash/                  # Bash configuration
-│   ├── bashrc            # Main bash configuration
-│   ├── aliases.bash      # Command aliases and functions
-│   ├── bash_colors.bash  # Color definitions for prompt
-│   ├── profile.bash      # Bash profile loader
-│   ├── inputrc          # Readline configuration (vi mode)
-│   └── osx/             # macOS-specific configurations
-├── vim/                  # Vim configuration
-│   ├── vimrc            # Main vim configuration  
-│   └── pack/            # Vim plugin packages (git submodules)
-├── screen/              # GNU Screen configuration
-│   └── screenrc         # Screen settings
-└── private/             # Private/sensitive configurations
-    ├── ssh/             # SSH configuration
-    └── bash/            # Work-specific bash settings
-```
-
-## How It Works
-
-The dotfiles use symbolic links to connect configuration files to their expected locations in your home directory. The Makefile system provides different installation profiles:
-
-- **Base** (`make`): Core bash, vim, screen, and SSH configurations
-- **macOS** (`make osx`): Base + macOS-specific enhancements 
-- **Work** (`make work`): macOS + private work configurations
+A comprehensive development environment configuration featuring an intelligent bash prompt, advanced git workflows, powerful vim setup with LSP support, and seamless screen session management.
 
 # Features
 
@@ -90,7 +9,7 @@ The dotfiles use symbolic links to connect configuration files to their expected
 
 ```
 [<screen-id>](<user>@<host>)<working-dir>(<git-branchname> <git-branch-status>)
-$ 
+$
 ```
 `git-branch-status`:
 * `+` = Unstaged changes
@@ -100,7 +19,7 @@ $
 
 ### Branch Management
 - `branch` - Interactive branch selector with preview using fzf
-- `master` - Quick switch to master branch  
+- `master` - Quick switch to master branch
 - `push` - Push current branch to origin with upstream tracking
 - `giff <commit>` - Interactive diff viewer for specific commit
 
@@ -141,7 +60,7 @@ $
 
 ### LSP Features (Language Server Protocol)
 - `Ctrl+h` - Show hover documentation
-- `-` - Show code actions/quick fixes  
+- `-` - Show code actions/quick fixes
 - `0` - Find all references
 - `3` - Rename symbol
 - `gi` - Go to implementation (when LSP enabled)
@@ -200,14 +119,14 @@ The `cdf` function provides fuzzy directory navigation for all subdirectories wi
 ```
 ~/projects/dotfiles
 ~/projects/myapp
-~/projects/website  
+~/projects/website
 ~/work/client1
 ~/work/client2
 ```
 
 **Customization**: Set `CDF_DEFAULT` environment variable to change startup behavior:
 - `export CDF_DEFAULT=""` - Default, shows all directories on startup
-- `export CDF_DEFAULT="myproject"` - Pre-filters to directories matching "myproject" 
+- `export CDF_DEFAULT="myproject"` - Pre-filters to directories matching "myproject"
 - Comment out the `cdf "$CDF_DEFAULT"` line in `bashrc` to disable auto-startup
 
 ## Customization
@@ -246,3 +165,84 @@ These are the most commonly used aliases (more available in [aliases.bash](https
 - `ns` - New screen session
 - `sl` - List all screen sessions
 - `kill-count` - Get line count in git repo by author
+
+# Installation
+
+## Quick Start
+```bash
+git clone --recursive https://github.com/schnej7/dotfiles.git
+cd ~/.dotfiles
+make        # Basic installation
+```
+
+## Installation Profiles
+
+| Command | Includes | Best For |
+|---------|----------|----------|
+| `make` | Bash, Vim, Screen, SSH | Linux/Basic setup |
+| `make osx` | Base + macOS features | macOS users |
+| `make work` | macOS + Private configs | Work environment |
+
+## What Gets Installed
+
+Each profile creates symbolic links:
+- `~/.bashrc` → `bash/bashrc`
+- `~/.vimrc` → `vim/vimrc`
+- `~/.screenrc` → `screen/screenrc`
+- `~/.bash_aliases` → `bash/aliases.bash`
+- `~/.bash_colors` → `bash/bash_colors.bash`
+- `~/.inputrc` → `bash/inputrc`
+- And more...
+
+## First Time Setup
+After installation:
+1. Restart your terminal or run `source ~/.bashrc`
+2. Open vim and run `:PlugInstall` to install plugins
+3. For LSP features in vim, run `:call StartLsp()`
+
+## Prerequisites
+
+### Required Tools
+- **Git** - For cloning and managing the repository
+- **Make** - For running installation commands
+- **Bash** - Shell environment
+- **Vim** - Text editor (configured with plugins)
+
+### macOS Specific Requirements
+- **Homebrew** - Package manager (installed automatically with `make osx`)
+- **bash-completion** - Enhanced tab completion
+
+### Optional Enhancements
+- **fzf** - Fuzzy finder for enhanced file/branch selection
+- **bat** - Better `cat` with syntax highlighting
+- **ack** - Advanced text search tool
+- **screen** - Terminal multiplexer
+
+# Repository Structure
+
+```
+dotfiles/
+├── bash/                  # Bash configuration
+│   ├── bashrc            # Main bash configuration
+│   ├── aliases.bash      # Command aliases and functions
+│   ├── bash_colors.bash  # Color definitions for prompt
+│   ├── profile.bash      # Bash profile loader
+│   ├── inputrc          # Readline configuration (vi mode)
+│   └── osx/             # macOS-specific configurations
+├── vim/                  # Vim configuration
+│   ├── vimrc            # Main vim configuration
+│   └── pack/            # Vim plugin packages (git submodules)
+├── screen/              # GNU Screen configuration
+│   └── screenrc         # Screen settings
+└── private/             # Private/sensitive configurations
+    ├── ssh/             # SSH configuration
+    └── bash/            # Work-specific bash settings
+```
+
+## How It Works
+
+The dotfiles use symbolic links to connect configuration files to their expected locations in your home directory. The Makefile system provides different installation profiles:
+
+- **Base** (`make`): Core bash, vim, screen, and SSH configurations
+- **macOS** (`make osx`): Base + macOS-specific enhancements
+- **Work** (`make work`): macOS + private work configurations
