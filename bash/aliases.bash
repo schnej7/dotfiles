@@ -46,12 +46,25 @@ function add() {
 }
 
 function branch() {
-  git branch -a --sort=-committerdate | \
-  fzf --no-sort --header 'git checkout' \
-      --preview 'branch=$(echo {} | sed "s/^[ *]*//" | sed "s#remotes/origin/##"); git log $branch --color=always' | \
-  awk '{print $1}' | \
-  sed 's#remotes/origin/##' | \
-  xargs git checkout
+  local selected_branch
+  selected_branch=$(git branch -a --sort=-committerdate | \
+    fzf --no-sort --header 'git checkout' \
+        --preview 'branch=$(echo {} | sed "s/^[ *]*//" | sed "s#remotes/origin/##"); git log $branch --color=always' | \
+    awk '{print $1}' | \
+    sed 's#remotes/origin/##')
+  
+  if [[ -n "$selected_branch" ]]; then
+    local checkout_cmd="git checkout $selected_branch"
+    eval "$checkout_cmd"
+    local exit_code=$?
+    
+    if [[ $exit_code -ne 0 ]]; then
+      # Add the failed command to bash history so user can re-run with up arrow
+      history -s "$checkout_cmd"
+    fi
+    
+    return $exit_code
+  fi
 }
 
 function master() {
