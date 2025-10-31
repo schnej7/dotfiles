@@ -433,3 +433,117 @@ function commit() {
   # Perform the git commit
   git commit -m "$final_msg"
 }
+
+# Kill processes by port using fzf for multi-selection
+function portkill() {
+  # Check dependencies
+  command -v fzf >/dev/null 2>&1 || { echo "Error: fzf not found"; return 1; }
+  command -v lsof >/dev/null 2>&1 || { echo "Error: lsof not found"; return 1; }
+
+  # Get listening ports with process info
+  local ports_info
+  ports_info=$(lsof -i -P -n | grep LISTEN)
+
+  if [ -z "$ports_info" ]; then
+    echo "No listening ports found."
+    return 0
+  fi
+
+  # Create temp file for detailed process info
+  local temp_file
+  temp_file=$(mktemp)
+  echo "$ports_info" > "$temp_file"
+
+  # Format the data for fzf
+  local formatted_info
+  formatted_info=$(awk '{
+    # Extract the port from address field
+    split($9, addr, ":")
+    port = addr[length(addr)]
+    gsub(/[^0-9]/, "", port)  # Clean up the port number
+
+    # Format: PORT | PID | COMMAND | FULL_INFO
+    printf "%-8s | %-7s | %-20.20s | %s\n", port, $2, $1, $0
+  }' "$temp_file" | sort -n)  # Sort numerically by port
+
+  # Use fzf for multi-selection
+  local header="Port     | PID     | Process              | Full Info"
+  local selections
+  selections=$(echo "$formatted_info" | fzf -m \
+    --header="$header - TAB to select multiple, ENTER to kill" \
+    --preview "echo -e 'Process Details:\\n'; grep \$(echo {} | awk '{print \$3}') \"$temp_file\" | sort -u" \
+    --preview-window=down:50%)
+
+  # Clean up temp file
+  rm -f "$temp_file"
+
+  if [ -z "$selections" ]; then
+    echo "No processes selected for killing."
+    return 0
+  fi
+
+  # Create arrays to store process info
+  local -a pids=()
+  local -a ports=()
+  local -a commands=()
+
+  # Extract data from selections
+  while IFS= read -r line; do
+    local port=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1}')
+    local pid=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+    local cmd=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+
+    pids+=("$pid")
+    ports+=("$port")
+    commands+=("$cmd")
+  done <<< "$selections"
+
+  # Confirm before killing
+  local count=${#pids[@]}
+  echo "Selected $count process(es) to kill:"
+  for ((i=0; i<count; i++)); do
+    echo "  Port ${ports[i]}: ${commands[i]} (PID: ${pids[i]})"
+  done
+
+  read -p "Proceed with killing these processes? [y/N] " confirm
+  if [[ ! "$confirm" =~ ^[yY]$ ]]; then
+    echo "Operation canceled."
+    return 0
+  fi
+
+  # Kill each process
+  local success_count=0
+  for ((i=0; i<count; i++)); do
+    local pid="${pids[i]}"
+    local port="${ports[i]}"
+    local cmd="${commands[i]}"
+
+    echo -n "Killing ${cmd} (PID: ${pid}) on port ${port}... "
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+      echo "Process no longer exists."
+      continue
+    fi
+
+    # Try SIGTERM first
+    kill -15 "$pid" 2>/dev/null
+    sleep 0.5
+
+    # If still running, try SIGKILL
+    if kill -0 "$pid" 2>/dev/null; then
+      echo -n "Using SIGKILL... "
+      kill -9 "$pid" 2>/dev/null
+      sleep 0.5
+    fi
+
+    # Check final status
+    if ! kill -0 "$pid" 2>/dev/null; then
+      echo "Success."
+      ((success_count++))
+    else
+      echo "Failed. May require higher privileges."
+    fi
+  done
+
+  echo "$success_count of $count processes successfully terminated."
+}
