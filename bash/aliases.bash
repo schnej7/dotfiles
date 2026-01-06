@@ -14,8 +14,9 @@ function add() {
   files=$(git status --porcelain | grep -E '^(UU|AA|DD|AU|UA|DU|UD)' | sed 's/^...//')
 
   # If no merge conflicts, check for regular unstaged files
+  # Include MM (staged but edited again), M (modified), D (deleted), and ?? (untracked)
   if [[ -z "$files" ]]; then
-    files=$(git status --porcelain | grep -E '^ M | A | D |^\?\?' | sed 's/^...//')
+    files=$(git status --porcelain | grep -E '^MM |^ M |^ D |^D  |^\?\?' | sed 's/^...//')
   fi
 
   # Sort and remove duplicates
@@ -30,9 +31,20 @@ function add() {
   local selected_files
   selected_files=$(printf '%s\n' "$files" | fzf -m \
     --header='Select files to stage (Tab: multi-select, Enter: confirm)' \
-    --preview 'cd $(git rev-parse --show-toplevel) &&
-                 git diff --color=always {} 2>/dev/null || git diff --cached --color=always {} 2>/dev/null || echo "New file or binary";
-              ' \
+    --preview 'cd $(git rev-parse --show-toplevel) && {
+                 file={};
+                 status=$(git status --porcelain "$file" 2>/dev/null | cut -c1-2);
+                 if echo "$status" | grep -q "??"; then
+                   # New file: show contents in green
+                   while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[32m%s\x1b[0m\n" "$line"; done < "$file" 2>/dev/null
+                 elif echo "$status" | grep -qE " D|D "; then
+                   # Deleted file: show contents in red from HEAD
+                   git show HEAD:"$file" 2>/dev/null | while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[31m%s\x1b[0m\n" "$line"; done
+                 else
+                   # Modified file: show diff
+                   git diff --color=always "$file" 2>/dev/null || git diff --cached --color=always "$file" 2>/dev/null || echo "Binary file or no changes"
+                 fi
+               }' \
     --preview-window=right:60%:wrap)
 
   if [[ -n "$selected_files" ]]; then

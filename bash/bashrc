@@ -1,6 +1,11 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
+if [ -n "$CURSOR_TRACE_ID" ]; then
+    echo "IS CURSOR"
+    return
+fi
+
 export VISUAL=vim
 export EDITOR=$VISUAL
 
