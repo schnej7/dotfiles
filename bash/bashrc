@@ -22,6 +22,8 @@ shopt -s histappend
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=1000
 HISTFILESIZE=2000
+HISTFILE=~/.history/bash_history.$$
+mkdir -p ~/.history
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -129,6 +131,9 @@ cur-hist() {
 }
 
 precmd(){
+    # Write bash history
+    history -a
+
     # Single optimized call to get all git info
     get-git-info
 
@@ -165,10 +170,12 @@ precmd(){
     if [[ $STY != "" ]]; then
         PROMPT_SCREEN="${bldpur}[${bldgrn}$(echo $STY | grep -o ^[0-9]*)${bldpur}]"
     else
-        PROMPT_SCREEN="${bldpur}[${bldgrn}---${bldpur}]"
+        PROMPT_SCREEN="${bldpur}[${bldred}---${bldpur}]"
     fi
 
-    export PS1="${PROMPT_SCREEN}${PROMPT_MAIN}${PROMPT_GIT}${bldpur}\n$ ${txtrst}"
+    PROMPT_PID="${bldpur}{${bldcyn}$$${bldpur}}"
+
+    export PS1="${PROMPT_PID}${PROMPT_SCREEN}${PROMPT_MAIN}${PROMPT_GIT}${bldpur}\n$ ${txtrst}"
     export PS2="${bldwht}↪ ${txtrst}"
 
 }
