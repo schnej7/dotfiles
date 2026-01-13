@@ -2,9 +2,139 @@ function sauce() {
   source ~/.bashrc
 }
 
+# Generate preview command for git file selection
+# Usage: _git_file_preview [commit_hash] [mode]
+# If commit_hash is provided, shows diff against that commit
+# mode can be "diff" (for giff) or "status" (for add), defaults to "diff"
+function _git_file_preview() {
+  local commit_hash="$1"
+  local mode="${2:-diff}"
+  if [[ -n "$commit_hash" ]]; then
+    # Preview for diff context (giff command with commit)
+    cat <<EOF
+cd \$(git rev-parse --show-toplevel) && {
+  file={};
+  # Check if file exists in commit and in working directory
+  exists_in_commit=\$(git cat-file -e "$commit_hash":"\$file" 2>/dev/null && echo "yes" || echo "no");
+  exists_in_wd=\$(test -f "\$file" && echo "yes" || echo "no");
+  if [[ "\$exists_in_commit" == "no" && "\$exists_in_wd" == "yes" ]]; then
+    # New file: show contents in green
+    while IFS= read -r line || [ -n "\$line" ]; do printf "\x1b[32m%s\x1b[0m\n" "\$line"; done < "\$file" 2>/dev/null
+  elif [[ "\$exists_in_commit" == "yes" && "\$exists_in_wd" == "no" ]]; then
+    # Deleted file: show contents in red from the commit
+    git show "$commit_hash":"\$file" 2>/dev/null | while IFS= read -r line || [ -n "\$line" ]; do printf "\x1b[31m%s\x1b[0m\n" "\$line"; done
+  else
+    # Modified file: show diff
+    git diff "$commit_hash" --color=always "\$file" 2>/dev/null || echo "Binary file or no changes"
+  fi
+}
+EOF
+  elif [[ "$mode" == "status" ]]; then
+    # Preview for working directory status context (add command)
+    cat <<'EOF'
+cd $(git rev-parse --show-toplevel) && {
+  file={};
+  status=$(git status --porcelain "$file" 2>/dev/null | cut -c1-2);
+  if echo "$status" | grep -q "??"; then
+    # New file: show contents in green
+    while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[32m%s\x1b[0m\n" "$line"; done < "$file" 2>/dev/null
+  elif echo "$status" | grep -qE " D|D "; then
+    # Deleted file: show contents in red from HEAD
+    git show HEAD:"$file" 2>/dev/null | while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[31m%s\x1b[0m\n" "$line"; done
+  else
+    # Modified file: show diff
+    git diff --color=always "$file" 2>/dev/null || git diff --cached --color=always "$file" 2>/dev/null || echo "Binary file or no changes"
+  fi
+}
+EOF
+  else
+    # Preview for working directory diff context (giff command without commit)
+    cat <<'EOF'
+cd $(git rev-parse --show-toplevel) && {
+  file={};
+  # Check if file exists in HEAD and in working directory
+  exists_in_head=$(git cat-file -e HEAD:"$file" 2>/dev/null && echo "yes" || echo "no");
+  exists_in_wd=$(test -f "$file" && echo "yes" || echo "no");
+  if [[ "$exists_in_head" == "no" && "$exists_in_wd" == "yes" ]]; then
+    # New file: show contents in green
+    while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[32m%s\x1b[0m\n" "$line"; done < "$file" 2>/dev/null
+  elif [[ "$exists_in_head" == "yes" && "$exists_in_wd" == "no" ]]; then
+    # Deleted file: show contents in red from HEAD
+    git show HEAD:"$file" 2>/dev/null | while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[31m%s\x1b[0m\n" "$line"; done
+  else
+    # Modified file: show diff
+    git diff --color=always "$file" 2>/dev/null || echo "Binary file or no changes"
+  fi
+}
+EOF
+  fi
+}
+
 function giff() {
-  FILES=$(git diff --name-only $1 | fzf -m --preview "git diff $1 {} | bat --style=numbers --color=always")
-  git diff $1 $FILES
+  local commit_hash="$1"
+
+  local preview_cmd
+  if [[ -n "$commit_hash" ]]; then
+    preview_cmd=$(_git_file_preview "$commit_hash" "diff")
+  else
+    preview_cmd=$(_git_file_preview "" "diff")
+  fi
+
+  local files
+  if [[ -n "$commit_hash" ]]; then
+    files=$(git diff --name-only "$commit_hash" | fzf -m \
+      --header="Select files to view diff (Tab: multi-select, Enter: confirm)" \
+      --preview "$preview_cmd" \
+      --preview-window=right:60%:wrap)
+  else
+    # Combine modified/deleted files from git diff with untracked files
+    local diff_files
+    local untracked_files
+    diff_files=$(git diff --name-only 2>/dev/null)
+    untracked_files=$(git ls-files --others --exclude-standard 2>/dev/null)
+    
+    # Combine and sort, removing duplicates
+    local all_files
+    all_files=$(printf '%s\n%s\n' "$diff_files" "$untracked_files" | grep -v '^$' | sort -u)
+    
+    if [[ -z "$all_files" ]]; then
+      echo "No changed files."
+      return 0
+    fi
+    
+    files=$(printf '%s\n' "$all_files" | fzf -m \
+      --header="Select files to view diff (Tab: multi-select, Enter: confirm)" \
+      --preview "$preview_cmd" \
+      --preview-window=right:60%:wrap)
+  fi
+
+  if [[ -n "$files" ]]; then
+    if [[ -n "$commit_hash" ]]; then
+      git diff "$commit_hash" $files
+    else
+      # For untracked files, show them in diff format; for tracked files, show normal diff
+      while IFS= read -r file; do
+        if [[ -n "$file" ]]; then
+          if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+            # Tracked file: show diff
+            git diff "$file"
+          else
+            # Untracked file: show as new file in diff format
+            git diff --no-index /dev/null "$file" 2>/dev/null || {
+              # Fallback if --no-index doesn't work: show file contents with diff-like header
+              echo "diff --git a/dev/null b/$file"
+              echo "new file mode 100644"
+              echo "index 0000000..$(git hash-object "$file" 2>/dev/null | cut -c1-7 2>/dev/null || echo "0000000")"
+              echo "--- /dev/null"
+              echo "+++ b/$file"
+              echo "@@ -0,0 +1,$(wc -l < "$file" 2>/dev/null || echo "0") @@"
+              sed 's/^/+/' "$file" 2>/dev/null
+            }
+          fi
+        fi
+      done <<< "$files"
+    fi
+  fi
 }
 
 function add() {
@@ -28,23 +158,13 @@ function add() {
   fi
 
   # Use fzf to select files with appropriate preview
+  local preview_cmd
+  preview_cmd=$(_git_file_preview "" "status")
+
   local selected_files
   selected_files=$(printf '%s\n' "$files" | fzf -m \
     --header='Select files to stage (Tab: multi-select, Enter: confirm)' \
-    --preview 'cd $(git rev-parse --show-toplevel) && {
-                 file={};
-                 status=$(git status --porcelain "$file" 2>/dev/null | cut -c1-2);
-                 if echo "$status" | grep -q "??"; then
-                   # New file: show contents in green
-                   while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[32m%s\x1b[0m\n" "$line"; done < "$file" 2>/dev/null
-                 elif echo "$status" | grep -qE " D|D "; then
-                   # Deleted file: show contents in red from HEAD
-                   git show HEAD:"$file" 2>/dev/null | while IFS= read -r line || [ -n "$line" ]; do printf "\x1b[31m%s\x1b[0m\n" "$line"; done
-                 else
-                   # Modified file: show diff
-                   git diff --color=always "$file" 2>/dev/null || git diff --cached --color=always "$file" 2>/dev/null || echo "Binary file or no changes"
-                 fi
-               }' \
+    --preview "$preview_cmd" \
     --preview-window=right:60%:wrap)
 
   if [[ -n "$selected_files" ]]; then
