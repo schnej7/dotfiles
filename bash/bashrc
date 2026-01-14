@@ -132,7 +132,9 @@ cur-hist() {
 
 precmd(){
     # Write bash history
-    history -a
+    # history -a only appends and doesn't create the file if it doesn't exist
+    # So we ensure the file exists first, then append
+    [ -f "$HISTFILE" ] && history -a || history -w
 
     # Single optimized call to get all git info
     get-git-info
