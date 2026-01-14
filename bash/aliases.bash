@@ -80,7 +80,14 @@ function branch() {
 }
 
 function master() {
-  git checkout master
+  if git show-ref --verify --quiet refs/heads/master; then
+    git checkout master
+  elif git show-ref --verify --quiet refs/heads/main; then
+    git checkout main
+  else
+    echo "Error: Neither 'master' nor 'main' branch found" >&2
+    return 1
+  fi
 }
 
 # Get line count by contributer
