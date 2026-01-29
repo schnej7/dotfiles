@@ -26,8 +26,43 @@ shopt -s histappend
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=1000
 HISTFILESIZE=2000
-HISTFILE=~/.history/bash_history.$$.$(date +%Y-%m-%d)
+# Session PID: outer (terminal) PID so prompt/history/script filename stay consistent across script subshells
+SESSION_PID=${ORIGINAL_PID:-$$}
+HISTFILE=~/.history/bash_history.$SESSION_PID.$(date +%Y-%m-%d)
 mkdir -p ~/.history
+
+# Start script for this terminal session (outer PID in filename). Nested manual `script` calls are allowed.
+if [ -z "${ORIGINAL_PID-}" ] && command -v script >/dev/null 2>&1; then
+    export ORIGINAL_PID=$$
+    mkdir -p ~/.script
+    exec script -q ~/.script/script.$ORIGINAL_PID.$(date +%Y-%m-%d)
+fi
+
+# Chain of bash PIDs for the prompt: one PID when we're the direct child of script (session); add PIDs only when user runs `bash`. When user runs `bash`, start a new script session for that subshell (new file per PID).
+if [ -n "${ORIGINAL_PID-}" ]; then
+    _ppid=$(ps -o ppid= -p $$ 2>/dev/null | tr -d ' ')
+    _pcomm=$(ps -o comm= -p $_ppid 2>/dev/null)
+    case "$_pcomm" in
+        script)
+            if [ -z "${BASH_PID_CHAIN-}" ]; then
+                export BASH_PID_CHAIN=$ORIGINAL_PID
+            fi
+            ;;
+        *bash*)
+            export BASH_PID_CHAIN=${BASH_PID_CHAIN:-$ORIGINAL_PID}:$$
+            if command -v script >/dev/null 2>&1; then
+                mkdir -p ~/.script
+                exec script -q ~/.script/script.$$.$(date +%Y-%m-%d)
+            fi
+            ;;
+        *)
+            export BASH_PID_CHAIN=${BASH_PID_CHAIN:-$ORIGINAL_PID}:$$
+            ;;
+    esac
+    unset -v _ppid _pcomm
+else
+    export BASH_PID_CHAIN=$$
+fi
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -179,7 +214,7 @@ precmd(){
         PROMPT_SCREEN="${bldpur}[${bldred}---${bldpur}]"
     fi
 
-    PROMPT_PID="${bldpur}{${bldcyn}$$${bldpur}}"
+    PROMPT_PID="${bldpur}{${bldcyn}${BASH_PID_CHAIN}${bldpur}}"
 
     export PS1="${PROMPT_PID}${PROMPT_SCREEN}${PROMPT_MAIN}${PROMPT_GIT}${bldpur}\n$ ${txtrst}"
     export PS2="${bldwht}↪ ${txtrst}"
