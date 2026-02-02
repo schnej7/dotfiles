@@ -63,7 +63,7 @@ $
 
 ## Cursor Integration
 
-When running inside Cursor (when `CURSOR_TRACE_ID` is set), bash sources `private/cursor_bashrc.sh` for Cursor-specific configuration. The GitHub MCP server can be run via the wrapper script `bash/github-mcp.sh`, which starts the official GitHub MCP server in Docker using `gh auth token`.
+When running inside Cursor (when `CURSOR_TRACE_ID` is set), bash sources `~/.cursor_bashrc.sh`, which in turn sources `~/.cursor_bashrc_private.sh` for work-specific configuration (both are symlinked from the repo by `make`). The GitHub MCP server can be run via the wrapper script `bash/github-mcp.sh`, which starts the official GitHub MCP server in Docker using `gh auth token`.
 
 ## Vim Configuration
 
@@ -179,7 +179,7 @@ Each profile creates symbolic links:
 - `~/.bash_aliases` → `bash/aliases.bash`
 - `~/.bash_colors` → `bash/bash_colors.bash`
 - `~/.inputrc` → `bash/inputrc`
-- And more...
+- `~/.cursor_bashrc.sh` → `cursor_bashrc.sh`
 
 ## First Time Setup
 After installation:
