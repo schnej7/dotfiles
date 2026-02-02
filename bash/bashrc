@@ -35,7 +35,7 @@ mkdir -p ~/.history
 if [ -z "${ORIGINAL_PID-}" ] && command -v script >/dev/null 2>&1; then
     export ORIGINAL_PID=$$
     mkdir -p ~/.script
-    exec script -q ~/.script/script.$ORIGINAL_PID.$(date +%Y-%m-%d)
+    exec script -q -r ~/.script/script.$ORIGINAL_PID.$(date +%Y-%m-%d)
 fi
 
 # Chain of bash PIDs for the prompt: one PID when we're the direct child of script (session); add PIDs only when user runs `bash`. When user runs `bash`, start a new script session for that subshell (new file per PID).
@@ -52,7 +52,7 @@ if [ -n "${ORIGINAL_PID-}" ]; then
             export BASH_PID_CHAIN=${BASH_PID_CHAIN:-$ORIGINAL_PID}:$$
             if command -v script >/dev/null 2>&1; then
                 mkdir -p ~/.script
-                exec script -q ~/.script/script.$$.$(date +%Y-%m-%d)
+                exec script -q -r ~/.script/script.$$.$(date +%Y-%m-%d)
             fi
             ;;
         *)
