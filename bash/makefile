@@ -5,6 +5,7 @@ base:
 	ln -sf $(CURDIR)/inputrc ~/.inputrc
 	ln -sf $(CURDIR)/inputrc.vi-common ~/.inputrc.vi-common
 	ln -sf $(CURDIR)/bash_colors.bash ~/.bash_colors
+	ln -sf $(CURDIR)/../cursor_bashrc.sh ~/.cursor_bashrc.sh
 
 aliases:
 	ln -sf $(CURDIR)/aliases.bash ~/.bash_aliases

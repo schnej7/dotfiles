@@ -3,9 +3,9 @@
 
 if [ -n "$CURSOR_TRACE_ID" ]; then
     echo "IS CURSOR"
-    # Source cursor-specific configuration
-    if [ -f "$HOME/cmt/dotfiles/private/cursor_bashrc.sh" ]; then
-        source "$HOME/cmt/dotfiles/private/cursor_bashrc.sh"
+    # Source cursor-specific configuration (top-level sources private for work-specific config)
+    if [ -f "$HOME/.cursor_bashrc.sh" ]; then
+        source "$HOME/.cursor_bashrc.sh"
     fi
     return
 fi
