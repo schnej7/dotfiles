@@ -23,11 +23,16 @@ $
 - `push` - Push current branch to origin with upstream tracking
 - `giff <commit>` - Interactive diff viewer for specific commit
 
+### Staging & Commits
+- `add` - Interactive staging with fzf: select files to stage (conflicts, new, removed, modified) with diff/preview; useful during rebase and day-to-day staging
+- `commit` - Interactive commit with conventional commit type (feat, fix, docs, etc.), optional ticket from branch name, and COMMIT_SUBJECT; opens editor for message
+
 ### Code Analysis
 - `kill-count` - Show line count contributions by author
 - `replace <old> <new> <dir>` - Recursive find and replace with preview
 - `sack <pattern>` - Search code excluding common directories (node_modules, dist, etc.)
 - `osack <pattern>` - Open files containing pattern in vim
+- `portkill` - Interactive kill by port: fzf over listening ports (port, PID, command) with multi-select; uses lsof
 
 ### File Management
 - `f <pattern>` - Find files by name (excludes node_modules/dist)
@@ -55,6 +60,10 @@ $
 ## Docker Utilities
 
 - `docker-select` - Interactive container selector with preview and shell access
+
+## Cursor Integration
+
+When running inside Cursor (when `CURSOR_TRACE_ID` is set), bash sources `private/cursor_bashrc.sh` for Cursor-specific configuration. The GitHub MCP server can be run via the wrapper script `bash/github-mcp.sh`, which starts the official GitHub MCP server in Docker using `gh auth token`.
 
 ## Vim Configuration
 
@@ -99,6 +108,10 @@ $
   - `Ctrl+l` - Clear screen
   - `Ctrl+a` - Beginning of line
   - `Ctrl+e` - End of line
+
+### History & Session Recording
+- **Bash history** is written per session (PID) and per day to `~/.history/bash_history.$PID.$date`; history is appended progressively so each terminal has its own file
+- **Script sessions**: if `script` is available, each new terminal session (and each new `bash` subshell) starts a `script` recording to `~/.script/script.$PID.$date`, capturing full input and output for that session
 
 ### Enhanced Tools Integration
 - **fzf** configured with bat preview and reverse layout
@@ -202,6 +215,7 @@ dotfiles/
 │   ├── bash_colors.bash  # Color definitions for prompt
 │   ├── profile.bash      # Bash profile loader
 │   ├── inputrc          # Readline configuration (vi mode)
+│   ├── github-mcp.sh    # GitHub MCP server wrapper (Docker + gh auth)
 │   └── osx/             # macOS-specific configurations
 ├── vim/                  # Vim configuration
 │   ├── vimrc            # Main vim configuration
