@@ -566,3 +566,29 @@ function portkill() {
 
   echo "$success_count of $count processes successfully terminated."
 }
+
+## Bindings ##
+bind_bash_function() {
+  local key="$1"
+  local fn="$2"
+  local wrapper="__bind_${fn//[^a-zA-Z0-9_]/_}"
+
+  eval "
+$wrapper() {
+  local __line=\$READLINE_LINE
+  local __point=\$READLINE_POINT
+
+  $fn
+
+  READLINE_LINE=\$__line
+  READLINE_POINT=\$__point
+}
+"
+
+  bind -m emacs-standard -x "\"$key\": $wrapper"
+  bind -m vi-insert      -x "\"$key\": $wrapper"
+}
+
+bind_bash_function '\C-f' browse
+bind_bash_function '\C-l' clear
+bind_bash_function '\C-s' sauce
