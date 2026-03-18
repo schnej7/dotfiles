@@ -181,6 +181,14 @@ Each profile creates symbolic links:
 - `~/.inputrc` → `bash/inputrc`
 - `~/.cursor_bashrc.sh` → `cursor_bashrc.sh`
 
+## Health Check
+
+Run `make doctor` (or execute `scripts/dotfiles-doctor.sh` directly) to verify that required tools
+(`git`, `make`, `bash`, `vim`, `screen`, `fzf`, `bat`, `ack`, `docker`, and `gh`) are installed and
+that the key symlinks in your home directory still point at this repository. The doctor command
+prints actionable guidance for missing dependencies, highlights mismatched symlinks, and exits with
+non-zero status if anything needs attention.
+
 ## First Time Setup
 After installation:
 1. Restart your terminal or run `source ~/.bashrc`

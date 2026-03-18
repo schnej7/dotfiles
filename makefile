@@ -1,10 +1,13 @@
-.PHONY: all osx work bash bash-osx screen vim ssh work
+.PHONY: all osx work bash bash-osx screen vim ssh work doctor
 
 all: bash vim screen ssh
 
 osx: bash vim screen ssh bash-osx
 
 work: bash vim screen ssh bash-osx work
+
+doctor:
+	./scripts/dotfiles-doctor.sh
 
 bash:
 	$(MAKE) -C bash
