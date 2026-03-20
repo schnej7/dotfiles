@@ -619,7 +619,7 @@ function gstash() {
     --expect=alt-enter,enter \
     --prompt='Select stash: ' \
     --header='Enter: apply & drop | Alt-Enter: apply only | Ctrl-C: cancel' \
-    --preview='git stash show -p {1} 2>/dev/null || echo "Cannot preview stash"' \
+    --preview='stash_ref=$(echo {} | awk -F: '\''{print $1}'\''); git stash show -p "$stash_ref" 2>/dev/null || echo "Cannot preview stash"' \
     --preview-window=right:70%:wrap)
 
   if [[ -z "$fzf_output" ]]; then
