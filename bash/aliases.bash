@@ -589,6 +589,81 @@ $wrapper() {
   bind -m vi-insert      -x "\"$key\": $wrapper"
 }
 
+# Interactive git stash selection with fzf
+function gstash() {
+  # Check if fzf is installed
+  command -v fzf >/dev/null 2>&1 || { 
+    echo "Error: fzf not found. Please install fzf to use this function." >&2
+    return 1
+  }
+
+  # Check if we're in a git repository
+  git rev-parse --git-dir >/dev/null 2>&1
+  if [[ $? -ne 0 ]]; then
+    echo "Error: Not in a git repository" >&2
+    return 1
+  fi
+
+  # Get stash list
+  local stash_list
+  stash_list=$(git stash list)
+  if [[ -z "$stash_list" ]]; then
+    echo "No stashes found." >&2
+    return 0
+  fi
+
+  # Use fzf with --expect to detect which key was pressed
+  # --expect returns the key pressed followed by the selected line
+  local fzf_output
+  fzf_output=$(printf '%s\n' "$stash_list" | fzf \
+    --expect=alt-enter,enter \
+    --prompt='Select stash: ' \
+    --header='Enter: apply & drop | Alt-Enter: apply only | Ctrl-C: cancel' \
+    --preview='git stash show -p {1} 2>/dev/null || echo "Cannot preview stash"' \
+    --preview-window=right:70%:wrap)
+
+  if [[ -z "$fzf_output" ]]; then
+    # User cancelled with Ctrl-C or Esc
+    return 0
+  fi
+
+  # Parse fzf output: first line is the key, second line is the selection
+  local key_pressed
+  local selected
+  key_pressed=$(echo "$fzf_output" | head -n1)
+  selected=$(echo "$fzf_output" | tail -n1)
+
+  if [[ -z "$selected" ]]; then
+    echo "No stash selected." >&2
+    return 0
+  fi
+
+  # Extract the stash reference (first field before colon)
+  local stash_ref
+  stash_ref=$(echo "$selected" | awk -F: '{print $1}')
+
+  # Determine action based on key pressed
+  case "$key_pressed" in
+    enter)
+      echo "Applying and dropping stash: $stash_ref"
+      if git stash apply "$stash_ref"; then
+        git stash drop "$stash_ref"
+      else
+        echo "Failed to apply stash. Stash not dropped." >&2
+        return 1
+      fi
+      ;;
+    alt-enter)
+      echo "Applying stash (keeping): $stash_ref"
+      git stash apply "$stash_ref"
+      ;;
+    *)
+      echo "Unexpected key: $key_pressed" >&2
+      return 1
+      ;;
+  esac
+}
+
 bind_bash_function '\C-f' browse
 bind_bash_function '\C-l' clear
 bind_bash_function '\C-s' sauce
