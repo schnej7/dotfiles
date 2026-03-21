@@ -92,20 +92,63 @@ source "$HOME/.bash_colors"
 
 PROMPT_COMMAND=precmd
 
-# Optimized git info - single call to git status instead of 3
+# Optimized git info with timeout and caching for large repositories
+# Configurable timeout in milliseconds (default: 500ms)
+# Set GIT_PROMPT_TIMEOUT_MS=0 to disable timeout, or increase for slower systems
+GIT_PROMPT_TIMEOUT_MS=${GIT_PROMPT_TIMEOUT_MS:-500}
+# Cache duration in seconds (default: 2 seconds)
+# Set GIT_PROMPT_CACHE_SEC=0 to disable caching
+GIT_PROMPT_CACHE_SEC=${GIT_PROMPT_CACHE_SEC:-2}
+
 get-git-info(){
-    # Get git branch (fast operation)
+    # Check cache first (if we have cached values and they're recent)
+    local current_time=$(date +%s)
+    if [ -n "$GIT_CACHE_TIME" ] && [ -n "$GIT_CACHE_DIR" ] && \
+       [ "$PWD" = "$GIT_CACHE_DIR" ] && \
+       [ $((current_time - GIT_CACHE_TIME)) -lt $GIT_PROMPT_CACHE_SEC ]; then
+        # Use cached values
+        return 0
+    fi
+    
+    # Get git branch (fast operation, usually quick)
     local branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
 
     if [ -z "$branch" ]; then
         GIT_BRANCH=""
         GIT_HAS_COMMITS=""
         GIT_HAS_CHANGES=""
+        GIT_TIMEOUT=""
+        # Clear cache when not in a git repo
+        GIT_CACHE_TIME=""
+        GIT_CACHE_DIR=""
         return 0
     fi
 
-    # Single call to git status (was called 3 times before)
-    local status=$(git status --porcelain 2>/dev/null)
+    # Single call to git status with timeout protection
+    # Use timeout command to prevent hanging in large repositories
+    local status=""
+    local timeout_seconds=$(echo "scale=3; $GIT_PROMPT_TIMEOUT_MS / 1000" | bc 2>/dev/null || echo "0.5")
+    
+    if command -v timeout >/dev/null 2>&1; then
+        # Use timeout command if available
+        status=$(timeout $timeout_seconds git status --porcelain 2>/dev/null)
+        local timeout_exit=$?
+        
+        if [ $timeout_exit -eq 124 ]; then
+            # Timeout occurred - git status took too long
+            GIT_BRANCH="$branch"
+            GIT_HAS_COMMITS=""
+            GIT_HAS_CHANGES=""
+            GIT_TIMEOUT="1"
+            # Cache the timeout result
+            GIT_CACHE_TIME=$current_time
+            GIT_CACHE_DIR="$PWD"
+            return 0
+        fi
+    else
+        # Fallback without timeout (original behavior)
+        status=$(git status --porcelain 2>/dev/null)
+    fi
 
     # Parse status output once for both staged and unstaged changes
     local has_commits=""
@@ -127,6 +170,11 @@ get-git-info(){
     GIT_BRANCH="$branch"
     GIT_HAS_COMMITS="$has_commits"
     GIT_HAS_CHANGES="$has_changes"
+    GIT_TIMEOUT=""
+    
+    # Update cache
+    GIT_CACHE_TIME=$current_time
+    GIT_CACHE_DIR="$PWD"
 }
 
 cur-hist() {
@@ -144,24 +192,29 @@ precmd(){
 
     SPACE=""
     if [ -n "$GIT_BRANCH" ]; then
-        # Check for staged changes (commits ready)
-        if [ -n "$GIT_HAS_COMMITS" ]; then
-            COMMITS="${bldcyn}×"
-            SPACE=" "
+        # Check if git status timed out
+        if [ -n "$GIT_TIMEOUT" ]; then
+            # Show timeout indicator instead of status details
+            PROMPT_GIT="${bldwht}(${bldylw}$GIT_BRANCH${bldred}!${bldwht})"
         else
-            COMMITS=""
+            # Check for staged changes (commits ready)
+            if [ -n "$GIT_HAS_COMMITS" ]; then
+                COMMITS="${bldcyn}×"
+                SPACE=" "
+            else
+                COMMITS=""
+            fi
+
+            # Check for unstaged/untracked changes
+            if [ -n "$GIT_HAS_CHANGES" ]; then
+                CHANGES="${bldcyn}+"
+                SPACE=" "
+            else
+                CHANGES=""
+            fi
+
+            PROMPT_GIT="${bldwht}(${bldgrn}$GIT_BRANCH$SPACE$CHANGES$COMMITS${bldwht})"
         fi
-
-        # Check for unstaged/untracked changes
-        if [ -n "$GIT_HAS_CHANGES" ]; then
-            CHANGES="${bldcyn}+"
-            SPACE=" "
-        else
-            CHANGES=""
-        fi
-
-        PROMPT_GIT="${bldwht}(${bldgrn}$GIT_BRANCH$SPACE$CHANGES$COMMITS${bldwht})"
-
     else
         PROMPT_GIT=""
     fi
