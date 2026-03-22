@@ -95,7 +95,7 @@ PROMPT_COMMAND=precmd
 # Git prompt with optional timeout protection
 # 
 # Large repositories can cause 'git status' to hang, slowing down the prompt.
-# This adds optional timeout protection with minimal complexity.
+# This adds optional timeout protection with clean, understandable functions.
 #
 # Environment variable (optional):
 #   GIT_PROMPT_TIMEOUT_MS - Timeout in milliseconds (default: 1000ms = 1 second)
@@ -105,54 +105,53 @@ PROMPT_COMMAND=precmd
 # use but gives git status time to complete in moderately sized repos.
 # Most git status operations complete in <100ms. In very large repos where
 # git status might hang for seconds, the timeout prevents prompt delays.
-#
-# Implementation: Uses 'timeout' command if available. If timeout command
-# is not available or GIT_PROMPT_TIMEOUT_MS=0, falls back to plain git status.
 
 GIT_PROMPT_TIMEOUT_MS=${GIT_PROMPT_TIMEOUT_MS:-1000}
 
-# Simple git info function
-get-git-info(){
-    # Get git branch (fast operation)
-    local branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
+# Helper: Check if timeout command is available
+_has_timeout_command() {
+    command -v timeout >/dev/null 2>&1
+}
 
-    if [ -z "$branch" ]; then
-        GIT_BRANCH=""
-        GIT_HAS_COMMITS=""
-        GIT_HAS_CHANGES=""
-        GIT_TIMEOUT=""
-        return 0
-    fi
+# Helper: Convert milliseconds to seconds for timeout command
+# Uses bash integer arithmetic to avoid external tools like bc
+_ms_to_seconds() {
+    local ms="$1"
+    # Convert ms to seconds with 3 decimal places using integer arithmetic
+    # Example: 1000ms -> 1.000 seconds
+    local seconds=$((ms / 1000))
+    local remainder=$((ms % 1000))
+    printf "%d.%03d\n" "$seconds" "$remainder"
+}
 
-    # Get git status with optional timeout protection
-    local status=""
-    local timeout_exit=0
+# Helper: Get git status with timeout protection
+# Returns status via stdout, returns 124 exit code if timeout occurred
+_get_git_status_with_timeout() {
+    local timeout_ms="$1"
     
-    if [ "$GIT_PROMPT_TIMEOUT_MS" -gt 0 ] && command -v timeout >/dev/null 2>&1; then
-        # Convert milliseconds to seconds for timeout command
-        local timeout_seconds=$(echo "scale=3; $GIT_PROMPT_TIMEOUT_MS / 1000" | bc 2>/dev/null || echo "1.0")
-        
-        # Run with timeout protection
-        status=$(timeout $timeout_seconds git status --porcelain 2>/dev/null)
-        timeout_exit=$?
-        
-        if [ $timeout_exit -eq 124 ]; then
-            # Timeout occurred
-            GIT_BRANCH="$branch"
-            GIT_HAS_COMMITS=""
-            GIT_HAS_CHANGES=""
-            GIT_TIMEOUT="1"
-            return 0
-        fi
-    else
-        # No timeout protection (timeout=0 or timeout command not available)
-        status=$(git status --porcelain 2>/dev/null)
+    if [ "$timeout_ms" -le 0 ] || ! _has_timeout_command; then
+        # No timeout protection
+        git status --porcelain 2>/dev/null
+        return $?
     fi
+    
+    local timeout_seconds
+    timeout_seconds=$(_ms_to_seconds "$timeout_ms")
+    
+    # Run git status with timeout
+    timeout "$timeout_seconds" git status --porcelain 2>/dev/null
+    local exit_code=$?
+    
+    # Return the exit code (124 means timeout occurred)
+    return $exit_code
+}
 
-    # Parse status output once for both staged and unstaged changes
+# Helper: Parse git status output to detect changes
+_parse_git_status() {
+    local status="$1"
     local has_commits=""
     local has_changes=""
-
+    
     if [ -n "$status" ]; then
         # Check for staged changes (first character is not space or ?)
         if echo "$status" | grep -q '^[^? ] '; then
@@ -164,7 +163,49 @@ get-git-info(){
             has_changes="1"
         fi
     fi
+    
+    # Output results (caller can capture with command substitution)
+    echo "$has_commits:$has_changes"
+}
 
+# Main git info function - clean and focused
+get-git-info(){
+    # Get git branch (fast operation)
+    local branch
+    branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
+
+    if [ -z "$branch" ]; then
+        GIT_BRANCH=""
+        GIT_HAS_COMMITS=""
+        GIT_HAS_CHANGES=""
+        GIT_TIMEOUT=""
+        return 0
+    fi
+
+    # Get git status with timeout protection
+    local status
+    local exit_code
+    
+    status=$(_get_git_status_with_timeout "$GIT_PROMPT_TIMEOUT_MS")
+    exit_code=$?
+    
+    if [ $exit_code -eq 124 ]; then
+        # Timeout occurred
+        GIT_BRANCH="$branch"
+        GIT_HAS_COMMITS=""
+        GIT_HAS_CHANGES=""
+        GIT_TIMEOUT="1"
+        return 0
+    fi
+    
+    # Parse the status output
+    local parsed_result
+    parsed_result=$(_parse_git_status "$status")
+    
+    # Extract results from parsed output
+    local has_commits="${parsed_result%%:*}"
+    local has_changes="${parsed_result#*:}"
+    
     # Set global variables for use in precmd
     GIT_BRANCH="$branch"
     GIT_HAS_COMMITS="$has_commits"
