@@ -92,56 +92,26 @@ source "$HOME/.bash_colors"
 
 PROMPT_COMMAND=precmd
 
-# Optimized git prompt with optional timeout protection
+# Git prompt with optional timeout protection
 # 
 # Large repositories can cause 'git status' to hang, slowing down the prompt.
-# This implementation adds optional timeout protection while keeping the core
-# logic simple and decoupled.
+# This adds optional timeout protection with minimal complexity.
 #
-# Environment variables (all optional):
-#   GIT_PROMPT_TIMEOUT_MS - Timeout in milliseconds (default: 500ms)
-#                           Set to 0 to disable timeout protection
-#   GIT_PROMPT_CACHE_SEC  - Cache duration in seconds (default: 0 = disabled)
-#                           Caching is minimal and only prevents repeated
-#                           timeouts in the same directory
+# Environment variable (optional):
+#   GIT_PROMPT_TIMEOUT_MS - Timeout in milliseconds (default: 1000ms = 1 second)
+#                           Set to 0 to disable timeout protection entirely
 #
-# Why 500ms default? It's short enough to not block typing but long enough
-# for most repositories. Adjust based on your system performance.
+# Why 1000ms default? It's a reasonable balance - fast enough for interactive
+# use but gives git status time to complete in moderately sized repos.
+# Most git status operations complete in <100ms. In very large repos where
+# git status might hang for seconds, the timeout prevents prompt delays.
 #
-# Cache behavior: When enabled, only timeout results are cached (not status).
-# This prevents repeated timeouts when navigating large repos.
+# Implementation: Uses 'timeout' command if available. If timeout command
+# is not available or GIT_PROMPT_TIMEOUT_MS=0, falls back to plain git status.
 
-GIT_PROMPT_TIMEOUT_MS=${GIT_PROMPT_TIMEOUT_MS:-500}
-GIT_PROMPT_CACHE_SEC=${GIT_PROMPT_CACHE_SEC:-0}
+GIT_PROMPT_TIMEOUT_MS=${GIT_PROMPT_TIMEOUT_MS:-1000}
 
-# Helper: Run git status with optional timeout
-# Returns status output via stdout, returns 124 if timeout occurred
-git-status-with-timeout() {
-    local timeout_ms=$1
-    
-    # Convert milliseconds to seconds for timeout command
-    local timeout_seconds=$(echo "scale=3; $timeout_ms / 1000" | bc 2>/dev/null || echo "0.5")
-    
-    if [ "$timeout_ms" -eq 0 ] || ! command -v timeout >/dev/null 2>&1; then
-        # No timeout protection requested or timeout command not available
-        git status --porcelain 2>/dev/null
-        return $?
-    fi
-    
-    # Run with timeout protection
-    timeout $timeout_seconds git status --porcelain 2>/dev/null
-    local exit_code=$?
-    
-    if [ $exit_code -eq 124 ]; then
-        # Timeout occurred
-        echo "TIMEOUT"
-        return 124
-    fi
-    
-    return $exit_code
-}
-
-# Core git info function - simple and focused
+# Simple git info function
 get-git-info(){
     # Get git branch (fast operation)
     local branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
@@ -154,45 +124,36 @@ get-git-info(){
         return 0
     fi
 
-    # Check cache for timeout results (if caching enabled)
-    if [ "$GIT_PROMPT_CACHE_SEC" -gt 0 ] && \
-       [ -n "$GIT_CACHE_TIMEOUT_TIME" ] && \
-       [ -n "$GIT_CACHE_TIMEOUT_DIR" ] && \
-       [ "$PWD" = "$GIT_CACHE_TIMEOUT_DIR" ] && \
-       [ $(($(date +%s) - GIT_CACHE_TIMEOUT_TIME)) -lt "$GIT_PROMPT_CACHE_SEC" ]; then
-        # We recently timed out in this directory, skip git status
-        GIT_BRANCH="$branch"
-        GIT_HAS_COMMITS=""
-        GIT_HAS_CHANGES=""
-        GIT_TIMEOUT="1"
-        return 0
-    fi
-
     # Get git status with optional timeout protection
-    local status
-    status=$(git-status-with-timeout "$GIT_PROMPT_TIMEOUT_MS")
-    local status_exit=$?
+    local status=""
+    local timeout_exit=0
     
-    if [ $status_exit -eq 124 ]; then
-        # Timeout occurred
-        GIT_BRANCH="$branch"
-        GIT_HAS_COMMITS=""
-        GIT_HAS_CHANGES=""
-        GIT_TIMEOUT="1"
+    if [ "$GIT_PROMPT_TIMEOUT_MS" -gt 0 ] && command -v timeout >/dev/null 2>&1; then
+        # Convert milliseconds to seconds for timeout command
+        local timeout_seconds=$(echo "scale=3; $GIT_PROMPT_TIMEOUT_MS / 1000" | bc 2>/dev/null || echo "1.0")
         
-        # Cache timeout result if caching enabled
-        if [ "$GIT_PROMPT_CACHE_SEC" -gt 0 ]; then
-            GIT_CACHE_TIMEOUT_TIME=$(date +%s)
-            GIT_CACHE_TIMEOUT_DIR="$PWD"
+        # Run with timeout protection
+        status=$(timeout $timeout_seconds git status --porcelain 2>/dev/null)
+        timeout_exit=$?
+        
+        if [ $timeout_exit -eq 124 ]; then
+            # Timeout occurred
+            GIT_BRANCH="$branch"
+            GIT_HAS_COMMITS=""
+            GIT_HAS_CHANGES=""
+            GIT_TIMEOUT="1"
+            return 0
         fi
-        return 0
+    else
+        # No timeout protection (timeout=0 or timeout command not available)
+        status=$(git status --porcelain 2>/dev/null)
     fi
 
     # Parse status output once for both staged and unstaged changes
     local has_commits=""
     local has_changes=""
 
-    if [ -n "$status" ] && [ "$status" != "TIMEOUT" ]; then
+    if [ -n "$status" ]; then
         # Check for staged changes (first character is not space or ?)
         if echo "$status" | grep -q '^[^? ] '; then
             has_commits="1"
@@ -209,10 +170,6 @@ get-git-info(){
     GIT_HAS_COMMITS="$has_commits"
     GIT_HAS_CHANGES="$has_changes"
     GIT_TIMEOUT=""
-    
-    # Clear timeout cache on successful execution
-    GIT_CACHE_TIMEOUT_TIME=""
-    GIT_CACHE_TIMEOUT_DIR=""
 }
 
 cur-hist() {
