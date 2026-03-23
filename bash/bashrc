@@ -161,22 +161,17 @@ cur-hist() {
 }
 
 precmd(){
-    
-    
-    
+    # Write bash history (creates file if needed)
     [ -f "$HISTFILE" ] && history -a || history -w
 
-    
     get-git-info
 
     SPACE=""
     if [ -n "$GIT_BRANCH" ]; then
-        
         if [ -n "$GIT_TIMEOUT" ]; then
-            
+            # Timeout occurred
             PROMPT_GIT="${bldwht}(${bldylw}$GIT_BRANCH${bldred}!${bldwht})"
         else
-            
             if [ -n "$GIT_HAS_STAGED" ]; then
                 STAGED="${bldcyn}×"
                 SPACE=" "
