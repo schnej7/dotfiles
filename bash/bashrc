@@ -113,7 +113,10 @@ _parse_git_changes() {
     local has_unstaged=""
     
     if [ -n "$status" ]; then
+        # Staged changes: first character is not space or ?
         echo "$status" | grep -q '^[^? ] ' && has_staged="1"
+        
+        # Unstaged/untracked changes: ?? or . followed by non-space
         echo "$status" | grep -q '^?? \|^.[^ ] ' && has_unstaged="1"
     fi
     
