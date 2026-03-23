@@ -92,76 +92,103 @@ source "$HOME/.bash_colors"
 
 PROMPT_COMMAND=precmd
 
-# Optimized git info - single call to git status instead of 3
+# Git prompt with timeout protection for large repositories
+GIT_PROMPT_TIMEOUT_SECONDS=${GIT_PROMPT_TIMEOUT_SECONDS:-1.0}
+
+_get_git_status_safely() {
+    local timeout_seconds="$GIT_PROMPT_TIMEOUT_SECONDS"
+    
+    # Skip timeout if disabled or command unavailable
+    if [ "$(echo "$timeout_seconds <= 0" | bc -l 2>/dev/null || echo 1)" = "1" ] || ! command -v timeout >/dev/null 2>&1; then
+        git status --porcelain 2>/dev/null
+        return $?
+    fi
+    
+    timeout "$timeout_seconds" git status --porcelain 2>/dev/null
+}
+
+_parse_git_changes() {
+    local status="$1"
+    local has_staged=""
+    local has_unstaged=""
+    
+    if [ -n "$status" ]; then
+        # Staged changes: first character is not space or ?
+        echo "$status" | grep -q '^[^? ] ' && has_staged="1"
+        
+        # Unstaged/untracked changes: ?? or . followed by non-space
+        echo "$status" | grep -q '^?? \|^.[^ ] ' && has_unstaged="1"
+    fi
+    
+    echo "$has_staged:$has_unstaged"
+}
+
 get-git-info(){
-    # Get git branch (fast operation)
-    local branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
+    local branch
+    branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
 
     if [ -z "$branch" ]; then
         GIT_BRANCH=""
-        GIT_HAS_COMMITS=""
-        GIT_HAS_CHANGES=""
+        GIT_HAS_STAGED=""
+        GIT_HAS_UNSTAGED=""
+        GIT_TIMEOUT=""
         return 0
     fi
 
-    # Single call to git status (was called 3 times before)
-    local status=$(git status --porcelain 2>/dev/null)
-
-    # Parse status output once for both staged and unstaged changes
-    local has_commits=""
-    local has_changes=""
-
-    if [ -n "$status" ]; then
-        # Check for staged changes (first character is not space or ?)
-        if echo "$status" | grep -q '^[^? ] '; then
-            has_commits="1"
-        fi
-
-        # Check for untracked or unstaged changes
-        if echo "$status" | grep -q '^?? \|^.[^ ] '; then
-            has_changes="1"
-        fi
+    local status exit_code
+    status=$(_get_git_status_safely)
+    exit_code=$?
+    
+    if [ $exit_code -eq 124 ]; then
+        # Timeout occurred
+        GIT_BRANCH="$branch"
+        GIT_HAS_STAGED=""
+        GIT_HAS_UNSTAGED=""
+        GIT_TIMEOUT="1"
+        return 0
     fi
-
-    # Set global variables for use in precmd
+    
+    local parsed
+    parsed=$(_parse_git_changes "$status")
+    
     GIT_BRANCH="$branch"
-    GIT_HAS_COMMITS="$has_commits"
-    GIT_HAS_CHANGES="$has_changes"
+    GIT_HAS_STAGED="${parsed%%:*}"
+    GIT_HAS_UNSTAGED="${parsed#*:}"
+    GIT_TIMEOUT=""
 }
-
 cur-hist() {
     echo "$(history | tail -n 1 | awk '{print $1}')"
 }
 
 precmd(){
-    # Write bash history
-    # history -a only appends and doesn't create the file if it doesn't exist
-    # So we ensure the file exists first, then append
+    # Write bash history (creates file if needed)
     [ -f "$HISTFILE" ] && history -a || history -w
 
-    # Single optimized call to get all git info
     get-git-info
 
     SPACE=""
     if [ -n "$GIT_BRANCH" ]; then
-        # Check for staged changes (commits ready)
-        if [ -n "$GIT_HAS_COMMITS" ]; then
-            COMMITS="${bldcyn}×"
-            SPACE=" "
+        if [ -n "$GIT_TIMEOUT" ]; then
+            # Timeout occurred
+            PROMPT_GIT="${bldwht}(${bldylw}$GIT_BRANCH${bldred}!${bldwht})"
         else
-            COMMITS=""
+            if [ -n "$GIT_HAS_STAGED" ]; then
+                STAGED="${bldcyn}×"
+                SPACE=" "
+            else
+                STAGED=""
+            fi
+
+            # Check for unstaged/untracked changes
+            if [ -n "$GIT_HAS_UNSTAGED" ]; then
+                UNSTAGED="${bldcyn}+"
+                SPACE=" "
+            else
+                UNSTAGED=""
+            fi
+
+            PROMPT_GIT="${bldwht}(${bldgrn}$GIT_BRANCH$SPACE$UNSTAGED$STAGED${bldwht})"
         fi
-
-        # Check for unstaged/untracked changes
-        if [ -n "$GIT_HAS_CHANGES" ]; then
-            CHANGES="${bldcyn}+"
-            SPACE=" "
-        else
-            CHANGES=""
-        fi
-
-        PROMPT_GIT="${bldwht}(${bldgrn}$GIT_BRANCH$SPACE$CHANGES$COMMITS${bldwht})"
-
     else
         PROMPT_GIT=""
     fi
