@@ -192,7 +192,41 @@ function o() {
 
 # Browse files and directories with fzf - cd to directories, open files with $EDITOR
 function browse() {
-  command -v fzf >/dev/null || { echo "fzf not found" >&2; return 1; }
+    command -v fzf >/dev/null || { echo "fzf not found" >&2; return 1; }
+    
+    local fifo="${TMPDIR:-/tmp}/browse_fifo.$$"
+    mkfifo "$fifo" 2>/dev/null || { echo "Failed to create fifo" >&2; return 1; }
+    
+    # Count files in current directory for performance optimization
+    local file_count=$(find . -maxdepth 1 -type f 2>/dev/null | wc -l)
+    local dir_count=$(find . -maxdepth 1 -type d 2>/dev/null | wc -l)
+    local total_count=$((file_count + dir_count - 1))  # Subtract current directory
+    
+    # For very large directories, limit search depth
+    local find_cmd="find ."
+    if [ $total_count -gt 10000 ]; then
+        echo "Large directory detected ($total_count items), limiting search depth..." >&2
+        find_cmd="find . -maxdepth 3"
+    elif [ $total_count -gt 5000 ]; then
+        find_cmd="find . -maxdepth 4"
+    fi
+    
+    # Generate file list in background
+    ($find_cmd 2>/dev/null | sed 's|^\./||' > "$fifo") &
+    
+    # Run fzf reading from named pipe
+    selection=$(fzf ${1:+-q "$1"} --preview 'if [[ -d {} ]]; then ls -la {}; else bat --style=numbers --color=always --line-range :50 {} 2>/dev/null || cat {} 2>/dev/null || echo "Cannot preview file"; fi' < "$fifo")
+    
+    rm -f "$fifo"
+    
+    if [ -n "$selection" ]; then
+        if [[ -d "$selection" ]]; then
+            cd "$selection"
+        else
+            ${EDITOR:-vim} "$selection"
+        fi
+    fi
+}
 
   local selection fifo="/tmp/browse_$$"
 
@@ -667,3 +701,27 @@ function gstash() {
 bind_bash_function '\C-f' browse
 bind_bash_function '\C-l' clear
 bind_bash_function '\C-s' sauce
+
+# FZF performance optimizations for large directories
+export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --margin=1 --padding=1"
+# Faster scanning for large directories
+export FZF_DEFAULT_COMMAND="find . -type f 2>/dev/null | head -10000"
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+
+# Function to check directory size and adjust fzf behavior
+fzf-smart() {
+    local dir="${1:-.}"
+    local file_count=$(find "$dir" -type f 2>/dev/null | wc -l)
+    
+    if [ $file_count -gt 10000 ]; then
+        echo "Large directory: $file_count files. Using fast mode..." >&2
+        # Use fd if available (faster than find)
+        if command -v fd >/dev/null; then
+            fd --type f --max-depth 3 . "$dir" 2>/dev/null | fzf "$@"
+        else
+            find "$dir" -type f -maxdepth 3 2>/dev/null | fzf "$@"
+        fi
+    else
+        fzf "$@"
+    fi
+}
