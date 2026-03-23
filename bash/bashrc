@@ -92,57 +92,35 @@ source "$HOME/.bash_colors"
 
 PROMPT_COMMAND=precmd
 
-# Git prompt with optional timeout protection
-# 
-# Large repositories can cause 'git status' to hang, slowing down the prompt.
-# This adds simple timeout protection with clean, understandable code.
-#
-# Environment variable (optional):
-#   GIT_PROMPT_TIMEOUT_SECONDS - Timeout in seconds (default: 1.0)
-#                               Set to 0 to disable timeout protection entirely
-#
-# Why 1.0 second default? It's a reasonable balance - fast enough for interactive
-# use but gives git status time to complete in moderately sized repos.
-# Most git status operations complete in <0.1s. In very large repos where
-# git status might hang for seconds, the timeout prevents prompt delays.
-
+# Git prompt with timeout protection for large repositories
 GIT_PROMPT_TIMEOUT_SECONDS=${GIT_PROMPT_TIMEOUT_SECONDS:-1.0}
 
-# Simple git status with optional timeout
 _get_git_status_safely() {
     local timeout_seconds="$GIT_PROMPT_TIMEOUT_SECONDS"
     
-    # If timeout is disabled or timeout command not available, run normally
+    # Skip timeout if disabled or command unavailable
     if [ "$(echo "$timeout_seconds <= 0" | bc -l 2>/dev/null || echo 1)" = "1" ] || ! command -v timeout >/dev/null 2>&1; then
         git status --porcelain 2>/dev/null
         return $?
     fi
     
-    # Run with timeout (124 exit code means timeout occurred)
     timeout "$timeout_seconds" git status --porcelain 2>/dev/null
 }
 
-# Parse git status output to detect staged and unstaged changes
 _parse_git_changes() {
     local status="$1"
     local has_staged=""
     local has_unstaged=""
     
     if [ -n "$status" ]; then
-        # Staged changes: first character is not space or ?
         echo "$status" | grep -q '^[^? ] ' && has_staged="1"
-        
-        # Unstaged/untracked changes: ?? or . followed by non-space
         echo "$status" | grep -q '^?? \|^.[^ ] ' && has_unstaged="1"
     fi
     
-    # Output results
     echo "$has_staged:$has_unstaged"
 }
 
-# Main git info function - clean and focused
 get-git-info(){
-    # Get git branch (fast operation)
     local branch
     branch=$(git symbolic-ref HEAD 2>/dev/null | sed "s/refs\/heads\///g")
 
@@ -154,7 +132,6 @@ get-git-info(){
         return 0
     fi
 
-    # Get git status with optional timeout
     local status exit_code
     status=$(_get_git_status_safely)
     exit_code=$?
@@ -168,11 +145,9 @@ get-git-info(){
         return 0
     fi
     
-    # Parse changes from status
     local parsed
     parsed=$(_parse_git_changes "$status")
     
-    # Set global variables
     GIT_BRANCH="$branch"
     GIT_HAS_STAGED="${parsed%%:*}"
     GIT_HAS_UNSTAGED="${parsed#*:}"
@@ -183,22 +158,22 @@ cur-hist() {
 }
 
 precmd(){
-    # Write bash history
-    # history -a only appends and doesn't create the file if it doesn't exist
-    # So we ensure the file exists first, then append
+    
+    
+    
     [ -f "$HISTFILE" ] && history -a || history -w
 
-    # Single optimized call to get all git info
+    
     get-git-info
 
     SPACE=""
     if [ -n "$GIT_BRANCH" ]; then
-        # Check if git status timed out
+        
         if [ -n "$GIT_TIMEOUT" ]; then
-            # Show timeout indicator instead of status details
+            
             PROMPT_GIT="${bldwht}(${bldylw}$GIT_BRANCH${bldred}!${bldwht})"
         else
-            # Check for staged changes (commits ready)
+            
             if [ -n "$GIT_HAS_STAGED" ]; then
                 STAGED="${bldcyn}×"
                 SPACE=" "
