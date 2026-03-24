@@ -58,21 +58,48 @@ function add() {
 }
 
 function branch() {
+  # Enhanced git branch switching with better preview and recent branches
+  
+  # Get recent branches (last 30 days, most frequently checked out)
+  local recent_branches
+  recent_branches=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/ | head -20)
+  
+  # Get all branches including remotes
+  local all_branches
+  all_branches=$(git branch -a --sort=-committerdate)
+  
   local selected_branch
-  selected_branch=$(git branch -a --sort=-committerdate | \
-    fzf --no-sort --header 'git checkout' \
-        --preview 'branch=$(echo {} | sed "s/^[ *]*//" | sed "s#remotes/origin/##"); git log $branch --color=always' | \
+  selected_branch=$(printf "%s\n%s" "$recent_branches" "$all_branches" | \
+    awk '!seen[$0]++' | \
+    fzf \
+      --no-sort \
+      --header 'git checkout (↑/↓: navigate, Ctrl-R: recent, Ctrl-A: all)' \
+      --bind 'ctrl-r:reload(git for-each-ref --sort=-committerdate --format="%(refname:short)" refs/heads/ | head -20)' \
+      --bind 'ctrl-a:reload(git branch -a --sort=-committerdate)' \
+      --preview '
+        branch=$(echo {} | sed "s/^[ *]*//" | sed "s#remotes/origin/##")
+        echo "Branch: $branch"
+        echo "Last commit: $(git log -1 --format="%ar" $branch 2>/dev/null || echo "N/A")"
+        echo "Author: $(git log -1 --format="%an" $branch 2>/dev/null || echo "N/A")"
+        echo ""
+        echo "Recent commits:"
+        git log --oneline -5 $branch --color=always 2>/dev/null || echo "No commits"
+      ' | \
     awk '{print $1}' | \
     sed 's#remotes/origin/##')
   
   if [[ -n "$selected_branch" ]]; then
     local checkout_cmd="git checkout $selected_branch"
+    echo "Checking out: $selected_branch"
     eval "$checkout_cmd"
     local exit_code=$?
     
     if [[ $exit_code -ne 0 ]]; then
       # Add the failed command to bash history so user can re-run with up arrow
       history -s "$checkout_cmd"
+      echo "Checkout failed. Command added to history for editing."
+    else
+      echo "Switched to branch: $selected_branch"
     fi
     
     return $exit_code
