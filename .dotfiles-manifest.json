@@ -1,0 +1,159 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedBy": "dotfiles-installer@1.0.0",
+  "generatedAt": "2026-04-05T02:29:56.948Z",
+  "repository": {
+    "url": "https://github.com/schnej7/dotfiles",
+    "ref": "main"
+  },
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "actions": [
+    {
+      "type": "symlink",
+      "source": "bash/aliases.bash",
+      "target": "~/.bash_aliases",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "bash/bash_colors.bash",
+      "target": "~/.bash_colors",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "bash/bashrc",
+      "target": "~/.bashrc",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "bash/github-mcp.sh",
+      "target": "~/.github-mcp.sh",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "bash/inputrc",
+      "target": "~/.inputrc",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "bash/inputrc.vi-common",
+      "target": "~/.inputrc.vi-common",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "bash/profile.bash",
+      "target": "~/.bash_profile",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "bash/osx",
+      "target": "~/.osx",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "screen/screenrc",
+      "target": "~/.screenrc",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "vim/vimrc",
+      "target": "~/.vimrc",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "vim/pack",
+      "target": "~/.vim/pack",
+      "overwrite": false
+    },
+    {
+      "type": "symlink",
+      "source": "cursor_bashrc.sh",
+      "target": "~/.cursor_bashrc.sh",
+      "overwrite": false
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "fzf",
+      "install": {
+        "brew": "fzf",
+        "apt": "fzf"
+      }
+    },
+    {
+      "name": "fd",
+      "install": {
+        "brew": "fd",
+        "apt": "fd-find"
+      }
+    },
+    {
+      "name": "ack",
+      "install": {
+        "brew": "ack",
+        "apt": "ack"
+      }
+    },
+    {
+      "name": "bat",
+      "install": {
+        "brew": "bat",
+        "apt": "bat"
+      }
+    },
+    {
+      "name": "screen",
+      "install": {
+        "brew": "screen",
+        "apt": "screen"
+      }
+    },
+    {
+      "name": "docker",
+      "install": {
+        "brew": "docker",
+        "apt": "docker.io"
+      }
+    },
+    {
+      "name": "lsof",
+      "install": {
+        "brew": "lsof",
+        "apt": "lsof"
+      }
+    },
+    {
+      "name": "vim",
+      "install": {
+        "brew": "vim",
+        "apt": "vim"
+      }
+    },
+    {
+      "name": "git",
+      "install": {
+        "brew": "git",
+        "apt": "git"
+      }
+    },
+    {
+      "name": "gh",
+      "install": {
+        "brew": "gh",
+        "apt": "gh"
+      }
+    }
+  ]
+}
