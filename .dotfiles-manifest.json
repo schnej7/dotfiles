@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "dotfiles-installer@1.0.0",
-  "generatedAt": "2026-04-05T03:05:57.236Z",
+  "generatedAt": "2026-04-05T03:25:04.602Z",
   "repository": {
     "url": "https://github.com/schnej7/dotfiles",
     "ref": "main"
@@ -11,12 +11,6 @@
     "linux"
   ],
   "actions": [
-    {
-      "type": "hook",
-      "name": "Start",
-      "command": "echo \"Installation start\"",
-      "when": "pre"
-    },
     {
       "type": "symlink",
       "source": "bash/aliases.bash",
@@ -88,12 +82,6 @@
       "source": "cursor_bashrc.sh",
       "target": "~/.cursor_bashrc.sh",
       "overwrite": false
-    },
-    {
-      "type": "hook",
-      "name": "End",
-      "command": "echo \"Installation end\"",
-      "when": "post"
     }
   ],
   "dependencies": [
