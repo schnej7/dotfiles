@@ -667,3 +667,4 @@ function gstash() {
 bind_bash_function '\C-f' browse
 bind_bash_function '\C-l' clear
 bind_bash_function '\C-s' sauce
+bind_bash_function '\C-b' branch
