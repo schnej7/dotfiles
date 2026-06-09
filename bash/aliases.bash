@@ -664,6 +664,15 @@ function gstash() {
   esac
 }
 
+# Search all bash history files in ~/.history
+function hg() {
+  if [[ -z "$1" ]]; then
+    echo "Usage: hg <pattern>" >&2
+    return 1
+  fi
+  cat ~/.history/* | grep --color=auto "$@"
+}
+
 bind_bash_function '\C-f' browse
 bind_bash_function '\C-l' clear
 bind_bash_function '\C-s' sauce
