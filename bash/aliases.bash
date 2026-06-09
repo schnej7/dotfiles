@@ -449,8 +449,8 @@ function commit() {
     return 1
   fi
 
-  # Perform the git commit
-  git commit -m "$final_msg"
+  # Perform the git commit (signed)
+  git commit -S -m "$final_msg"
 }
 
 # Kill processes by port using fzf for multi-selection
