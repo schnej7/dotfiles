@@ -687,6 +687,11 @@ function hg() {
 }
 
 bind_bash_function '\C-f' browse
-bind_bash_function '\C-l' clear
 bind_bash_function '\C-s' sauce
-bind_bash_function '\C-b' branch
+
+# For clear and branch, we need prompt refresh after, so execute as actual commands
+# Using kill-whole-line (\C-u) + command + enter
+bind -m emacs-standard '"\C-l": "\C-uclear\n"'
+bind -m vi-insert      '"\C-l": "\C-uclear\n"'
+bind -m emacs-standard '"\C-b": "\C-ubranch\n"'
+bind -m vi-insert      '"\C-b": "\C-ubranch\n"'
