@@ -90,6 +90,11 @@ function master() {
   fi
 }
 
+function main() {
+    master
+}
+
+
 # Get line count by contributer
 function kill-count(){
     git ls-files -z | xargs -0rn 1 -P "$(nproc)" -I{} sh -c 'git blame -w -M -C -C --line-porcelain -- {} | grep -I --line-buffered "^author "' | sort -f | uniq -ic | sort -n
@@ -142,6 +147,10 @@ function dirspace(){
 
 # Rename a screen session
 function renameScreen(){
+    # Only rename when attached to a screen session
+    if [[ -z "$STY" ]]; then
+        return 0
+    fi
     NEW_NAME=$(echo $@ | sed 's/.*\///g')
     screen -X sessionname $NEW_NAME
     export STY=$(echo $STY | sed "s/\..*/.$NEW_NAME/g")
@@ -449,8 +458,12 @@ function commit() {
     return 1
   fi
 
-  # Perform the git commit (signed)
-  git commit -S -m "$final_msg"
+  # Sign when gpg is available; otherwise commit unsigned
+  if command -v gpg >/dev/null 2>&1 || command -v gpg2 >/dev/null 2>&1; then
+    git commit -S -m "$final_msg"
+  else
+    git commit -m "$final_msg"
+  fi
 }
 
 # Kill processes by port using fzf for multi-selection
