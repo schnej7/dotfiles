@@ -581,25 +581,13 @@ function portkill() {
 }
 
 ## Bindings ##
-bind_bash_function() {
+# Bind key to execute a command with prompt refresh
+# Uses macro: kill-whole-line (\C-u) + command + enter (\n)
+bind_key_to_command() {
   local key="$1"
-  local fn="$2"
-  local wrapper="__bind_${fn//[^a-zA-Z0-9_]/_}"
-
-  eval "
-$wrapper() {
-  local __line=\$READLINE_LINE
-  local __point=\$READLINE_POINT
-
-  $fn
-
-  READLINE_LINE=\$__line
-  READLINE_POINT=\$__point
-}
-"
-
-  bind -m emacs-standard -x "\"$key\": $wrapper"
-  bind -m vi-insert      -x "\"$key\": $wrapper"
+  local cmd="$2"
+  bind -m emacs-standard "\"$key\": \"\\C-u$cmd\\n\""
+  bind -m vi-insert      "\"$key\": \"\\C-u$cmd\\n\""
 }
 
 # Interactive git stash selection with fzf
@@ -686,12 +674,7 @@ function hg() {
   cat ~/.history/* | grep --color=auto "$@"
 }
 
-bind_bash_function '\C-f' browse
-bind_bash_function '\C-s' sauce
-
-# For clear and branch, we need prompt refresh after, so execute as actual commands
-# Using kill-whole-line (\C-u) + command + enter
-bind -m emacs-standard '"\C-l": "\C-uclear\n"'
-bind -m vi-insert      '"\C-l": "\C-uclear\n"'
-bind -m emacs-standard '"\C-b": "\C-ubranch\n"'
-bind -m vi-insert      '"\C-b": "\C-ubranch\n"'
+bind_key_to_command '\C-f' browse
+bind_key_to_command '\C-l' clear
+bind_key_to_command '\C-s' sauce
+bind_key_to_command '\C-b' branch
