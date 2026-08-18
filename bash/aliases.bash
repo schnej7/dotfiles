@@ -203,7 +203,7 @@ function o() {
 function browse() {
   command -v fzf >/dev/null || { echo "fzf not found" >&2; return 1; }
 
-  local selection fifo="/tmp/browse_$$"
+  local selection fifo="/tmp/browse_$$" mime
 
   # Create named pipe
   mkfifo "$fifo"
@@ -232,7 +232,12 @@ function browse() {
   if [[ -d "$selection" ]]; then
     builtin cd "$selection"
   elif [[ -f "$selection" ]]; then
-    ${EDITOR:-vim} "$selection"
+    mime=$(file --mime-type -b "$selection" 2>/dev/null)
+    if [[ "$mime" == image/* ]]; then
+      open "$selection"
+    else
+      ${EDITOR:-vim} "$selection"
+    fi
   else
     echo "Selection is neither a file nor a directory: $selection" >&2
     return 1
