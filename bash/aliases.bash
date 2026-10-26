@@ -57,6 +57,52 @@ function add() {
   fi
 }
 
+# Unstage changes in git (restore staged files to working tree)
+function unstage() {
+  # Check if we're in a git repository
+  git rev-parse --git-dir &> /dev/null
+  if [[ $? -ne 0 ]]; then
+    echo "Error: Not in a git repository" >&2
+    return 1
+  fi
+
+  # If args are provided, unstage those paths directly
+  if [[ $# -gt 0 ]]; then
+    git restore --staged "$@"
+    return $?
+  fi
+
+  # Otherwise, get the list of staged files
+  local staged
+  staged=$(git diff --cached --name-only)
+
+  if [[ -z "$staged" ]]; then
+    echo "No staged changes to unstage."
+    return 0
+  fi
+
+  # If fzf is available, let the user select which files to unstage
+  if command -v fzf >/dev/null 2>&1; then
+    local selected_files
+    selected_files=$(printf '%s\n' "$staged" | fzf -m \
+      --header='Select files to unstage (Tab: multi-select, Enter: confirm, Ctrl-C: cancel)' \
+      --preview 'cd $(git rev-parse --show-toplevel) && git diff --cached --color=always {}' \
+      --preview-window=right:60%:wrap)
+
+    if [[ -z "$selected_files" ]]; then
+      echo "No files selected."
+      return 0
+    fi
+
+    while IFS= read -r file; do
+      [[ -n "$file" ]] && git restore --staged "$file" && echo "Unstaged: $file"
+    done <<< "$selected_files"
+  else
+    # No fzf: unstage everything
+    git restore --staged .
+  fi
+}
+
 function branch() {
   local selected_branch
   selected_branch=$(git branch -a --sort=-committerdate | \
